@@ -75,7 +75,6 @@ export function CreateBoardPage() {
       <Field label="약속 이름 *" placeholder="2~40자" />
       <Field label="후보 날짜 *" placeholder="오늘 이후 · 최대 30일" />
       <Field label="목적 (선택)" placeholder="100자 이하" />
-      <Field label="1인 예산 (선택)" placeholder="0 이상" />
 
       <Label>보드 생성 후 바로 장소를 검색할까요?</Label>
       <Row>
