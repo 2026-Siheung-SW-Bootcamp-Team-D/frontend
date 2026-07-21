@@ -1,122 +1,46 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+/*
+ * 해시 경로에 맞는 화면 하나를 렌더한다.
+ *
+ * 실제 기능 구현이 시작되면 이 파일이 라우팅·레이아웃 진입점이 된다.
+ * (그때 react-router 도입 여부를 따로 합의한다 — AGENTS.md)
+ */
 
-function App() {
-  const [count, setCount] = useState(0)
+import ScreenIndex from './pages/wireframe/ScreenIndex.jsx'
+import { ROUTES, SCREEN_INDEX_PATH, useHashPath } from './routes.jsx'
 
+function NotFound({ path }) {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <div className="min-h-screen bg-neutral-100 px-4 py-10">
+      <div className="mx-auto w-full max-w-[400px] rounded-xl border border-neutral-300 bg-white px-4 py-6">
+        <h1 className="text-[16px] font-semibold text-neutral-900">
+          없는 화면이에요
+        </h1>
+        <p className="mt-2 font-mono text-[12px] break-all text-neutral-500">
+          #{path}
+        </p>
+        <a
+          href="#/_index"
+          className="mt-4 inline-flex rounded-lg bg-neutral-800 px-4 py-2.5 text-[13px] font-semibold text-white no-underline"
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          화면 목록으로
+        </a>
+      </div>
+    </div>
   )
 }
 
-export default App
+export default function App() {
+  const path = useHashPath()
+
+  if (path === SCREEN_INDEX_PATH) {
+    return <ScreenIndex />
+  }
+
+  const route = ROUTES.find((item) => item.path === path)
+  if (!route) {
+    return <NotFound path={path} />
+  }
+
+  const { Component } = route
+  return <Component />
+}
