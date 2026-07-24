@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>방향 C · 선명한 대비 (Bright Board)</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#16181d; --ink-2:#5b616e; --ink-3:#9aa0ac;
+    --line:#e7e9ee; --soft:#f4f6fa; --brand:#3568e7; --brand-soft:#e7eefc; --brand-ink:#234ea8;
+    --map:#e9edf4; --map-road:#f6f8fb; --like:#e0483d;
+    --font:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:#d8dbe1;color:var(--ink);-webkit-font-smoothing:antialiased;padding:40px 20px 80px;line-height:1.45}
+  .head{max-width:1180px;margin:0 auto 34px}
+  .head .kick{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--brand);font-weight:800}
+  .head h1{font-size:30px;letter-spacing:-.02em;margin:8px 0 10px;font-weight:800;color:#14161b}
+  .head p{max-width:660px;font-size:14px;color:#4a5060;line-height:1.6}
+  .head .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .head .tags span{background:#fff;border:1px solid #cfd3db;color:#414756;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px}
+  .head .back{display:inline-block;margin-top:18px;font-size:12.5px;color:#4a5060;text-decoration:none;border-bottom:1px solid #a9adb7;padding-bottom:1px}
+  .stage{max-width:1180px;margin:0 auto;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .cap{font-size:12.5px;color:#454b59;font-weight:600;padding-left:4px}
+  .cap b{color:#14161b}
+  .phone{width:375px;height:760px;background:var(--bg);border-radius:38px;box-shadow:0 2px 0 #c2c5cd,0 22px 50px -18px rgba(0,0,0,.45);overflow:hidden;position:relative;border:1px solid #cfd3db;display:flex;flex-direction:column}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;flex:0 0 auto}
+  .topbar{display:flex;align-items:center;gap:10px;padding:2px 18px 12px}
+  .topbar h2{font-size:18px;font-weight:800;letter-spacing:-.02em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .code{font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:5px 9px;letter-spacing:.08em}
+  .topbar .ppl{display:flex}
+  .topbar .ppl span{width:24px;height:24px;border-radius:6px;border:1.5px solid #fff;margin-left:-6px;font-size:10px;font-weight:700;color:#fff;display:grid;place-items:center}
+  .c1{background:#3568e7}.c2{background:#e0483d}.c3{background:#0f9d7a}.c4{background:#8a5cf0}
+  .selbar{margin:0 18px;background:var(--brand);color:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+  .selbar .em{font-size:20px}
+  .selbar .t{flex:1;min-width:0}
+  .selbar .k{font-size:10.5px;font-weight:700;opacity:.85;letter-spacing:.04em}
+  .selbar .nm{font-size:15px;font-weight:800;margin-top:1px}
+  .selbar .chg{background:rgba(255,255,255,.2);border:0;color:#fff;font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;border-radius:8px}
+  .map{position:relative;flex:1 1 auto;background:var(--map);overflow:hidden;margin-top:12px}
+  .map .road{position:absolute;background:var(--map-road)}
+  .map .pin{position:absolute;transform:translate(-50%,-100%);z-index:2}
+  .map .pin .dot{width:30px;height:30px;border-radius:8px;background:#fff;border:1.5px solid var(--ink);display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2);font-size:14px}
+  .map .pin.sel .dot{background:var(--brand);border-color:var(--brand);width:36px;height:36px;box-shadow:0 6px 14px rgba(53,104,231,.5)}
+  .map .pin.sel::after{content:"지금 여기";position:absolute;top:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--brand);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+  .map .ctrl{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}
+  .map .ctrl b{width:36px;height:36px;border-radius:9px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:15px;box-shadow:0 3px 8px rgba(0,0,0,.1)}
+  .sheet{flex:0 0 auto;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -6px 20px -10px rgba(0,0,0,.15);margin-top:-16px;z-index:3;display:flex;flex-direction:column;max-height:320px}
+  .grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 6px}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:2px 18px 8px}
+  .sheet-head h3{font-size:13px;font-weight:800}
+  .sheet-head .sort{font-size:11px;color:var(--ink-2);font-weight:600}
+  .cards{overflow-y:auto;padding:0 14px;display:flex;flex-direction:column;gap:7px}
+  .pcard{display:flex;gap:11px;padding:11px;border:1px solid var(--line);border-radius:11px;align-items:center}
+  .pcard.sel{border-color:var(--brand);background:var(--brand-soft)}
+  .pcard .gl{width:32px;height:32px;border-radius:8px;background:var(--soft);display:grid;place-items:center;font-size:16px;flex:0 0 auto}
+  .pcard.sel .gl{background:#fff}
+  .pcard .b{flex:1;min-width:0}
+  .pcard .nm{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+  .pcard .tag{font-size:9.5px;font-weight:800;color:#fff;background:var(--brand);padding:1px 6px;border-radius:5px}
+  .pcard .meta{font-size:11px;color:var(--ink-2);margin-top:2px}
+  .pcard .st{display:flex;gap:10px;font-size:11.5px;font-weight:700;color:var(--ink-2);flex:0 0 auto}
+  .pcard .st .on{color:var(--like)}
+  .fab{padding:10px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:9px;border-top:1px solid var(--line)}
+  .fab .add{flex:1;background:var(--brand);color:#fff;border:0;font-family:inherit;font-size:14.5px;font-weight:800;padding:14px;border-radius:11px}
+  .fab .ghost{flex:0 0 auto;background:#fff;border:1px solid var(--line);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:700;padding:0 14px;border-radius:11px}
+  .screen{padding:8px 20px 24px;overflow-y:auto;flex:1 1 auto}
+  .s-title{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:12px 0 6px}
+  .s-p{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+  .field{margin-top:16px}
+  .field label{font-size:12px;font-weight:700;display:block;margin-bottom:7px}
+  .inp{border:1.5px solid var(--line);border-radius:11px;padding:14px;font-size:15px;background:#fff}
+  .inp.focus{border-color:var(--brand)}
+  .inp.ph{color:var(--ink-3)}
+  .cnt{font-size:11px;color:var(--ink-3);text-align:right;margin-top:5px}
+  .bigbtn{width:100%;border:0;font-family:inherit;border-radius:12px;padding:15px;font-size:15px;font-weight:800;margin-top:16px}
+  .bigbtn.pri{background:var(--brand);color:#fff}
+  .bigbtn.sec{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .skip{display:block;text-align:center;font-size:12.5px;color:var(--ink-2);font-weight:600;margin-top:14px;text-decoration:none}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+  .chips b{font-size:12px;font-weight:700;padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+  .chips b.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .nearbanner{background:var(--brand-soft);border:1px solid #cdddf9;border-radius:10px;padding:10px 13px;font-size:12px;color:var(--brand-ink);line-height:1.5;margin-top:2px}
+  .result{display:flex;gap:11px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:center}
+  .result .gl{width:34px;height:34px;border-radius:8px;background:var(--soft);display:grid;place-items:center;font-size:16px;flex:0 0 auto}
+  .result .b{flex:1;min-width:0}
+  .result .nm{font-size:14px;font-weight:700}
+  .result .ad{font-size:11px;color:var(--ink-2);margin-top:2px}
+  .result .add{flex:0 0 auto;background:var(--brand);color:#fff;border:0;font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;border-radius:8px}
+  .result .added{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="kick">Direction C</div>
+    <h1>선명한 대비 · Bright Board</h1>
+    <p>화이트 베이스에 <b>인디고 브랜드색(#3568E7)</b> 하나로 위계를 세운 또렷한 방향입니다. 기존 Figma 브랜드 결정과 연결되며, 낮은 라운드·1px 경계로 정보 밀도를 높여 후보가 많아져도 비교가 흐트러지지 않습니다. 현재 선택은 상단 인디고 바 하나로 항상 눈에 들되 “확정”처럼 무겁지 않게 표현합니다.</p>
+    <div class="tags"><span>인디고 브랜드 단색</span><span>지도 + 컴팩트 시트</span><span>고밀도 · 또렷한 대비</span><span>브랜드 연속성</span></div>
+    <a class="back" href="index.html">← 방향 갤러리로</a>
+  </div>
+
+  <div class="stage">
+
+    <div class="col">
+      <div class="cap"><b>PG-05</b> 후보 장소 보드 — 핵심 화면</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">모여봐</span></div>
+        <div class="topbar">
+          <h2>주말 저녁 모임</h2>
+          <span class="code">A7K-92</span>
+          <div class="ppl"><span class="c1">지</span><span class="c2">현</span><span class="c3">민</span><span class="c4">수</span></div>
+        </div>
+        <div class="selbar">
+          <span class="em">📍</span>
+          <div class="t"><div class="k">지금 여기 어때요 · 확정 아님</div><div class="nm">을지로 골목집</div></div>
+          <button class="chg">바꾸기</button>
+        </div>
+        <div class="map">
+          <div class="road" style="left:0;top:110px;width:100%;height:13px;transform:rotate(-4deg)"></div>
+          <div class="road" style="left:140px;top:0;width:14px;height:100%;transform:rotate(5deg)"></div>
+          <div class="road" style="left:0;top:190px;width:100%;height:9px"></div>
+          <div class="pin sel" style="left:175px;top:135px"><div class="dot">🍜</div></div>
+          <div class="pin" style="left:90px;top:105px"><div class="dot">🥩</div></div>
+          <div class="pin" style="left:255px;top:175px"><div class="dot">📍</div></div>
+          <div class="pin" style="left:150px;top:210px"><div class="dot">🍝</div></div>
+          <div class="pin" style="left:290px;top:110px"><div class="dot">☕</div></div>
+          <div class="ctrl"><b>＋</b><b>◎</b></div>
+        </div>
+        <div class="sheet">
+          <div class="grip"></div>
+          <div class="sheet-head"><h3>후보 5곳</h3><div class="sort">최근 추가순 ⌄</div></div>
+          <div class="cards">
+            <div class="pcard sel"><div class="gl">🍜</div><div class="b"><div class="nm">을지로 골목집 <span class="tag">지금 여기</span></div><div class="meta">한식 · 중구 · 현이 추가</div></div><div class="st"><span class="on">♥3</span><span>💬5</span></div></div>
+            <div class="pcard"><div class="gl">🥩</div><div class="b"><div class="nm">성수 연방스테이크</div><div class="meta">양식 · 성동구 · 지민이 추가</div></div><div class="st"><span>♡2</span><span>💬1</span></div></div>
+            <div class="pcard"><div class="gl">📍</div><div class="b"><div class="nm">합정 곳간</div><div class="meta">직접 지정 · 마포구 · 수가 추가</div></div><div class="st"><span>♡1</span><span>💬0</span></div></div>
+          </div>
+          <div class="fab"><button class="add">＋ 장소 추가</button><button class="ghost">지역 찾기</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-03 · PG-04</b> 참여자 입장 · 출발지</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">입장</span></div>
+        <div class="screen">
+          <div style="font-size:12px;letter-spacing:.18em;color:var(--brand);font-weight:800;text-transform:uppercase;margin-top:6px">초대받음</div>
+          <div class="s-title">‘주말 저녁 모임’에<br/>참여할게요</div>
+          <div class="s-p">보드 안에서 쓸 닉네임을 정해주세요. 로그인은 없어요.</div>
+          <div class="field"><label>닉네임</label><div class="inp focus">지민</div><div class="cnt">2 / 20</div></div>
+          <div class="field"><label>내 출발지 <span style="color:var(--ink-3);font-weight:500">· 지역 찾기에 쓰여요 (선택)</span></label><div class="inp ph">🔍 집·회사·역 검색</div></div>
+          <div class="nearbanner" style="margin-top:12px">다른 참여자에게 정확한 주소는 안 보여요. ‘등록됨’ 여부만 공유돼요.</div>
+          <button class="bigbtn pri">입장하기</button>
+          <a class="skip" href="#">출발지는 나중에 설정할게요 →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-10</b> 제안지역 · 임의좌표 주변 탐색 → 후보 추가</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">← 지역 찾기</span></div>
+        <div class="map" style="flex:0 0 190px;margin-top:0">
+          <div class="road" style="left:0;top:90px;width:100%;height:13px;transform:rotate(-4deg)"></div>
+          <div class="road" style="left:150px;top:0;width:14px;height:100%"></div>
+          <div class="pin sel" style="left:180px;top:95px"><div class="dot" style="border-radius:50%">✚</div></div>
+          <div class="ctrl"><b>＋</b></div>
+        </div>
+        <div class="sheet" style="max-height:none;flex:1 1 auto;margin-top:-16px">
+          <div class="grip"></div>
+          <div class="screen" style="padding-top:2px">
+            <div class="nearbanner">📍 <b>왕십리역 일대</b> 주변을 둘러보는 중 · 지도를 눌러 다른 지점으로 옮길 수 있어요</div>
+            <div class="chips" style="margin-top:12px"><b class="on">맛집</b><b>카페</b><b>놀거리</b><b>문화</b><b>숙소</b></div>
+            <div style="font-size:11.5px;color:var(--ink-3);margin:14px 0 2px;font-weight:600">추가하기 전엔 후보가 아니에요</div>
+            <div class="result"><div class="gl">🍜</div><div class="b"><div class="nm">왕십리 곱창골목</div><div class="ad">성동구 왕십리로 88</div></div><button class="add">＋ 추가</button></div>
+            <div class="result"><div class="gl">🍲</div><div class="b"><div class="nm">한양식당</div><div class="ad">성동구 행당로 12</div></div><button class="add">＋ 추가</button></div>
+            <div class="result"><div class="gl">🥘</div><div class="b"><div class="nm">엄마손칼국수</div><div class="ad">성동구 무학로 5</div></div><button class="add added">✓ 추가됨</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

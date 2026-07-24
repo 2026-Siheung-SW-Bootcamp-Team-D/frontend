@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>방향 A · 잔잔한 지도 (Mono Map)</title>
+<style>
+  :root{
+    --paper:#f6f4ef; --ink:#1c1b19; --ink-2:#6b6862; --ink-3:#a8a49b;
+    --line:#e5e1d8; --card:#fff; --accent:#e2603f; --accent-soft:#fbe9e3;
+    --map:#e9e6dd; --map-road:#f6f4ef; --map-water:#d6dfe0; --like:#e2603f;
+    --font:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:#cfcbc1;color:var(--ink);-webkit-font-smoothing:antialiased;padding:40px 20px 80px;line-height:1.45}
+  .head{max-width:1180px;margin:0 auto 34px;color:#2c2a27}
+  .head .kick{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7a766d;font-weight:700}
+  .head h1{font-size:30px;letter-spacing:-.02em;margin:8px 0 10px;font-weight:800}
+  .head p{max-width:660px;font-size:14px;color:#57544d;line-height:1.6}
+  .head .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .head .tags span{background:#fff;border:1px solid #d8d4ca;color:#4a4740;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px}
+  .head .back{display:inline-block;margin-top:18px;font-size:12.5px;color:#57544d;text-decoration:none;border-bottom:1px solid #b3aea3;padding-bottom:1px}
+  .stage{max-width:1180px;margin:0 auto;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .cap{font-size:12.5px;color:#54514a;font-weight:600;padding-left:4px}
+  .cap b{color:#2c2a27}
+  .phone{width:375px;height:760px;background:var(--paper);border-radius:40px;box-shadow:0 2px 0 #b9b5ab,0 22px 50px -18px rgba(0,0,0,.45);overflow:hidden;position:relative;border:1px solid #d8d4ca;display:flex;flex-direction:column}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;color:var(--ink);flex:0 0 auto}
+  .board-top{padding:2px 20px 12px;flex:0 0 auto}
+  .board-title{display:flex;align-items:center;justify-content:space-between}
+  .board-title h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .board-title .sub{font-size:12px;color:var(--ink-2);margin-top:3px}
+  .avatars{display:flex}
+  .avatars span{width:26px;height:26px;border-radius:50%;border:2px solid var(--paper);margin-left:-8px;font-size:11px;font-weight:700;color:#fff;display:grid;place-items:center}
+  .a1{background:#e2603f}.a2{background:#4f7d6e}.a3{background:#c99a3b}.a4{background:#5b6b8c}
+  .invite{margin-top:12px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+  .invite .code{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700;letter-spacing:.12em}
+  .invite .lbl{font-size:11px;color:var(--ink-3);font-weight:600}
+  .invite button{margin-left:auto;border:0;background:var(--ink);color:#fff;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:8px;font-family:inherit}
+  .map{position:relative;flex:1 1 auto;background:var(--map);overflow:hidden}
+  .map .road{position:absolute;background:var(--map-road)}
+  .map .water{position:absolute;background:var(--map-water);opacity:.9}
+  .pin{position:absolute;transform:translate(-50%,-100%);z-index:2}
+  .pin .dot{width:32px;height:32px;border-radius:50% 50% 50% 4px;transform:rotate(45deg);background:#fff;border:1.5px solid var(--ink);display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.22)}
+  .pin .dot span{transform:rotate(-45deg);font-size:14px;line-height:1}
+  .pin.sel{z-index:3}
+  .pin.sel .dot{background:var(--accent);border-color:var(--accent);width:40px;height:40px}
+  .pin.sel::after{content:"지금 여기";position:absolute;top:-24px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px}
+  .map .recenter{position:absolute;right:14px;top:14px;width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+  .map .maplabel{position:absolute;left:14px;bottom:14px;background:rgba(255,255,255,.85);border:1px solid var(--line);font-size:10.5px;color:var(--ink-2);padding:4px 9px;border-radius:8px;font-weight:600}
+  .sheet{flex:0 0 auto;background:var(--card);border-radius:22px 22px 0 0;box-shadow:0 -8px 24px -12px rgba(0,0,0,.18);margin-top:-18px;position:relative;z-index:4;padding:8px 0 0;max-height:340px;display:flex;flex-direction:column}
+  .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 8px}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:0 20px 10px}
+  .sheet-head h3{font-size:14px;font-weight:800}
+  .sheet-head .count{font-size:12px;color:var(--ink-2)}
+  .sheet-head .sort{font-size:11.5px;color:var(--ink-2);font-weight:600}
+  .cards{overflow-y:auto;padding:0 14px 8px;display:flex;flex-direction:column;gap:8px}
+  .pcard{display:flex;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;position:relative}
+  .pcard.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .pcard .gl{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--paper);border:1px solid var(--line);display:grid;place-items:center;font-size:17px;margin-top:1px}
+  .pcard.sel .gl{background:#fff;border-color:var(--accent)}
+  .pcard .body{flex:1 1 auto;min-width:0}
+  .pcard .nm{font-size:14.5px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+  .pcard .badge{font-size:10px;font-weight:700;color:#fff;background:var(--accent);padding:1px 7px;border-radius:999px}
+  .pcard .meta{font-size:11.5px;color:var(--ink-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pcard .stats{display:flex;gap:14px;margin-top:9px;font-size:12px;color:var(--ink-2);font-weight:600}
+  .pcard .stats .on{color:var(--like)}
+  .pcard .who{margin-left:auto;font-size:10.5px;color:var(--ink-3);font-weight:600}
+  .fab{position:absolute;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--card) 72%,rgba(255,255,255,0));display:flex;gap:10px;z-index:5}
+  .fab .add{flex:1 1 auto;background:var(--accent);color:#fff;border:0;font-family:inherit;font-size:15px;font-weight:800;padding:15px;border-radius:16px;box-shadow:0 8px 20px -6px rgba(226,96,63,.6);display:flex;align-items:center;justify-content:center;gap:8px}
+  .fab .ghost{flex:0 0 auto;background:#fff;border:1px solid var(--line);color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;padding:0 16px;border-radius:16px}
+  .screen{padding:2px 20px 20px;overflow-y:auto;flex:1 1 auto}
+  .s-h1{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:14px 0 6px}
+  .s-p{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+  .bigbtn{width:100%;border:0;font-family:inherit;border-radius:16px;padding:16px;font-size:15px;font-weight:800;margin-top:14px}
+  .bigbtn.pri{background:var(--accent);color:#fff}
+  .bigbtn.sec{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:11px;margin:18px 0}
+  .divider::before,.divider::after{content:"";height:1px;background:var(--line);flex:1}
+  .recent .r{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line)}
+  .recent .r .ic{width:38px;height:38px;border-radius:11px;background:var(--accent-soft);display:grid;place-items:center;font-size:17px}
+  .recent .r .t{font-size:14px;font-weight:700}
+  .recent .r .m{font-size:11.5px;color:var(--ink-3)}
+  .recent .r .go{margin-left:auto;color:var(--ink-3)}
+  .searchbar{display:flex;gap:8px;align-items:center;border:1.5px solid var(--ink);border-radius:14px;padding:12px 14px;background:#fff;margin-top:6px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+  .chips b{font-size:12px;font-weight:700;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+  .chips b.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .result{display:flex;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .result .r-b{flex:1;min-width:0}
+  .result .r-nm{font-size:14.5px;font-weight:700}
+  .result .r-ad{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+  .result .r-add{flex:0 0 auto;align-self:center;background:var(--accent);color:#fff;border:0;font-family:inherit;font-size:12px;font-weight:700;padding:8px 12px;border-radius:10px}
+  .d-hero{height:150px;margin:12px -20px 0;background:var(--map);position:relative;overflow:hidden}
+  .d-nm{font-size:22px;font-weight:800;margin-top:14px;letter-spacing:-.02em}
+  .d-ad{font-size:13px;color:var(--ink-2);margin-top:4px}
+  .d-actions{display:flex;gap:10px;margin-top:14px}
+  .d-actions button{flex:1;border:1px solid var(--line);background:#fff;font-family:inherit;font-size:13px;font-weight:700;padding:12px;border-radius:13px;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px}
+  .d-actions .like.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .d-actions .sel{background:var(--accent);border-color:var(--accent);color:#fff}
+  .cmt-h{font-size:13px;font-weight:800;margin:22px 0 4px}
+  .cmt{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .cmt .cav{width:30px;height:30px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}
+  .cmt .cb .cn{font-size:12.5px;font-weight:700}
+  .cmt .cb .ct{font-size:13px;color:#3d3a35;margin-top:2px;line-height:1.5}
+  .cmt .cb .cd{font-size:10.5px;color:var(--ink-3);margin-top:4px}
+  .cmt-input{display:flex;gap:8px;margin-top:14px}
+  .cmt-input .ci{flex:1;border:1px solid var(--line);border-radius:999px;padding:11px 16px;font-size:13px;background:#fff;color:var(--ink-3)}
+  .cmt-input .cs{border:0;background:var(--accent);color:#fff;width:42px;border-radius:50%;font-size:16px}
+  .sel-hero{background:var(--accent);color:#fff;margin:12px -20px 0;padding:22px 20px}
+  .sel-hero .k{font-size:11.5px;font-weight:700;opacity:.9}
+  .sel-hero .nm{font-size:24px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
+  .sel-hero .by{font-size:12px;opacity:.9;margin-top:8px}
+  .sel-hero .row{display:flex;gap:10px;margin-top:16px}
+  .sel-hero .row button{flex:1;border:0;font-family:inherit;font-size:13px;font-weight:700;padding:12px;border-radius:12px;background:rgba(255,255,255,.16);color:#fff}
+  .sel-hero .row button.solid{background:#fff;color:var(--accent)}
+  .pooltitle{font-size:12px;font-weight:800;color:var(--ink-2);margin:20px 0 8px}
+  .poolrow{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:13px;margin-bottom:8px;background:#fff}
+  .poolrow .gl{width:34px;height:34px;border-radius:10px;background:var(--paper);border:1px solid var(--line);display:grid;place-items:center;font-size:16px}
+  .poolrow .n{font-size:14px;font-weight:700}
+  .poolrow .mt{font-size:11px;color:var(--ink-2);margin-top:1px}
+  .poolrow .pick{margin-left:auto;border:1px solid var(--ink);background:#fff;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700;padding:8px 13px;border-radius:10px}
+  .empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:34px 24px;gap:6px}
+  .empty .em{font-size:40px}
+  .empty .et{font-size:16px;font-weight:800;margin-top:8px}
+  .empty .ep{font-size:13px;color:var(--ink-2);line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="kick">Direction A</div>
+    <h1>잔잔한 지도 · Mono Map</h1>
+    <p>지도가 화면을 지배하되 소란스럽지 않게. 잉크 모노톤 위에 <b>코럴 한 색</b>만 “현재 선택”과 “장소 추가”에 씁니다. 핀은 순서를 암시하는 숫자 대신 <b>카테고리 글리프</b>로 카드와 대응하고, 선택된 곳만 코럴 핀 + ‘지금 여기’ 라벨로 강조합니다. 종이 질감 배경으로 행정 지도 느낌을 지웠고, 본문은 한글 가독성이 좋은 Pretendard 계열을 씁니다.</p>
+    <div class="tags"><span>모노톤 + 코럴 단색</span><span>지도 우세 · 바텀시트</span><span>글리프 핀 ↔ 카드</span><span>숫자 핀 없음(순서 오해 방지)</span></div>
+    <a class="back" href="index.html">← 방향 갤러리로</a>
+  </div>
+
+  <div class="stage">
+
+    <div class="col">
+      <div class="cap"><b>PG-05</b> 후보 장소 보드 — 핵심 화면</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">모여봐</span></div>
+        <div class="board-top">
+          <div class="board-title">
+            <div><h2>주말 저녁 모임</h2><div class="sub">참여자 4명 · 후보 5곳</div></div>
+            <div class="avatars"><span class="a1">지</span><span class="a2">현</span><span class="a3">민</span><span class="a4">수</span></div>
+          </div>
+          <div class="invite"><span class="lbl">참여 코드</span><span class="code">A7K-92</span><button>초대 링크 복사</button></div>
+        </div>
+        <div class="map">
+          <div class="water" style="left:-40px;top:60px;width:150px;height:90px;border-radius:40%"></div>
+          <div class="road" style="left:0;top:120px;width:100%;height:14px;transform:rotate(-4deg)"></div>
+          <div class="road" style="left:130px;top:0;width:16px;height:100%;transform:rotate(6deg)"></div>
+          <div class="road" style="left:230px;top:0;width:10px;height:100%"></div>
+          <div class="road" style="left:0;top:220px;width:100%;height:10px"></div>
+          <div class="pin sel" style="left:180px;top:150px"><div class="dot"><span>🍜</span></div></div>
+          <div class="pin" style="left:90px;top:110px"><div class="dot"><span>🥩</span></div></div>
+          <div class="pin" style="left:250px;top:200px"><div class="dot"><span>📍</span></div></div>
+          <div class="pin" style="left:150px;top:235px"><div class="dot"><span>🍝</span></div></div>
+          <div class="pin" style="left:290px;top:120px"><div class="dot"><span>☕</span></div></div>
+          <div class="recenter">◎</div>
+          <div class="maplabel">정적 지도 (Kakao Maps 자리)</div>
+        </div>
+        <div class="sheet">
+          <div class="grip"></div>
+          <div class="sheet-head"><h3>후보 목록 <span class="count">· 5</span></h3><div class="sort">최근 추가순 ⌄</div></div>
+          <div class="cards">
+            <div class="pcard sel">
+              <div class="gl">🍜</div>
+              <div class="body"><div class="nm">을지로 골목집 <span class="badge">지금 여기</span></div><div class="meta">한식 · 중구 을지로12길</div><div class="stats"><span class="on">♥ 3</span><span>💬 5</span><span class="who">현이 추가</span></div></div>
+            </div>
+            <div class="pcard">
+              <div class="gl">🥩</div>
+              <div class="body"><div class="nm">성수 연방스테이크</div><div class="meta">양식 · 성동구 성수이로</div><div class="stats"><span>♥ 2</span><span>💬 1</span><span class="who">지민이 추가</span></div></div>
+            </div>
+            <div class="pcard">
+              <div class="gl">📍</div>
+              <div class="body"><div class="nm">합정 곳간</div><div class="meta">직접 지정 · 마포구</div><div class="stats"><span>♥ 1</span><span>💬 0</span><span class="who">수가 추가</span></div></div>
+            </div>
+          </div>
+          <div class="fab"><button class="add">＋ 장소 추가</button><button class="ghost">지역 찾기</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-05 · 빈 상태</b> 첫 후보 유도</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">모여봐</span></div>
+        <div class="board-top">
+          <div class="board-title"><div><h2>새 모임</h2><div class="sub">참여자 2명 · 후보 0곳</div></div><div class="avatars"><span class="a1">지</span><span class="a2">현</span></div></div>
+          <div class="invite"><span class="lbl">참여 코드</span><span class="code">B3M-14</span><button>초대 링크 복사</button></div>
+        </div>
+        <div class="map">
+          <div class="road" style="left:0;top:130px;width:100%;height:14px;transform:rotate(-4deg)"></div>
+          <div class="road" style="left:150px;top:0;width:14px;height:100%"></div>
+          <div class="maplabel">아직 핀이 없어요</div>
+        </div>
+        <div class="sheet" style="max-height:300px">
+          <div class="grip"></div>
+          <div class="empty">
+            <div class="em">🗺️</div>
+            <div class="et">첫 장소를 올려볼까요?</div>
+            <div class="ep">가고 싶은 곳을 검색하거나 지도에서 직접 찍어 후보로 모아보세요.</div>
+            <button class="bigbtn pri" style="margin-top:16px">＋ 장소 추가</button>
+            <button class="bigbtn sec">어디서 만날지 지역 먼저 찾기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-01</b> 홈</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">모여봐</span></div>
+        <div class="screen">
+          <div style="height:8px"></div>
+          <div style="font-size:12px;letter-spacing:.2em;color:var(--ink-3);font-weight:700;text-transform:uppercase">모여봐</div>
+          <div class="s-h1">가고 싶은 곳,<br/>같이 모아봐요</div>
+          <div class="s-p">친구들과 한 보드에 후보를 쌓고, 지도에서 비교하고, 지금 어디가 좋은지 가볍게 골라요.</div>
+          <button class="bigbtn pri">새 보드 만들기</button>
+          <div class="divider">또는 초대 코드로 입장</div>
+          <div class="searchbar"><span>🔑</span><span style="color:var(--ink-3);font-weight:600">A7K-92</span></div>
+          <button class="bigbtn sec" style="margin-top:10px">입장하기</button>
+          <div class="divider">최근 참여한 보드</div>
+          <div class="recent">
+            <div class="r"><div class="ic">🍜</div><div><div class="t">주말 저녁 모임</div><div class="m">4명 · 후보 5곳 · 방금 활동</div></div><div class="go">›</div></div>
+            <div class="r"><div class="ic">☕</div><div><div class="t">스터디 카페 찾기</div><div class="m">3명 · 후보 2곳 · 어제</div></div><div class="go">›</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-06</b> 장소 검색 · 추가</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">장소 추가</span></div>
+        <div class="map" style="flex:0 0 200px">
+          <div class="road" style="left:0;top:80px;width:100%;height:14px;transform:rotate(-4deg)"></div>
+          <div class="road" style="left:150px;top:0;width:14px;height:100%"></div>
+          <div class="maplabel">지도를 눌러 직접 위치 지정</div>
+        </div>
+        <div class="sheet" style="max-height:none;flex:1 1 auto;margin-top:-18px">
+          <div class="grip"></div>
+          <div class="screen" style="padding-top:0">
+            <div class="searchbar"><span>🔍</span><span style="font-weight:600">성수 파스타</span></div>
+            <div class="chips"><b class="on">키워드</b><b>맛집</b><b>카페</b><b>놀거리</b></div>
+            <div style="margin-top:6px">
+              <div class="result"><div class="r-b"><div class="r-nm">성수 연방스테이크</div><div class="r-ad">성동구 성수이로 24길 3</div></div><button class="r-add">＋ 추가</button></div>
+              <div class="result"><div class="r-b"><div class="r-nm">파스타붐 성수점</div><div class="r-ad">성동구 아차산로 104</div></div><button class="r-add">＋ 추가</button></div>
+              <div class="result"><div class="r-b"><div class="r-nm">오제제 파스타바</div><div class="r-ad">성동구 연무장길 41</div></div><button class="r-add">＋ 추가</button></div>
+            </div>
+            <div style="margin-top:14px;border:1px dashed var(--line);border-radius:13px;padding:13px;font-size:12px;color:var(--ink-2)">찾는 곳이 없나요? <b style="color:var(--accent)">외부 지도 링크로 추가</b> 또는 <b style="color:var(--accent)">지도에서 직접 찍기</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-07</b> 장소 상세 · 좋아요 · 댓글</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">← 후보 보드</span></div>
+        <div class="screen">
+          <div class="d-hero">
+            <div class="road" style="left:0;top:70px;width:100%;height:12px;transform:rotate(-4deg)"></div>
+            <div class="pin sel" style="left:50%;top:60%"><div class="dot"><span>🍜</span></div></div>
+          </div>
+          <div class="d-nm">을지로 골목집</div>
+          <div class="d-ad">한식 · 서울 중구 을지로12길 · 현이 추가</div>
+          <div class="d-actions"><button class="like on">♥ 좋아요 3</button><button class="sel">지금 여기로</button><button>🔗 지도 열기</button></div>
+          <div class="cmt-h">댓글 <span style="color:var(--ink-3)">5</span></div>
+          <div class="cmt"><div class="cav a2">현</div><div class="cb"><div class="cn">현</div><div class="ct">여기 노포 감성 좋아요. 7시 예약 가능해요!</div><div class="cd">10분 전</div></div></div>
+          <div class="cmt"><div class="cav a1">지</div><div class="cb"><div class="cn">지민</div><div class="ct">성수보다 여기가 중간이라 좋을듯 👍</div><div class="cd">6분 전</div></div></div>
+          <div class="cmt-input"><div class="ci">따뜻한 한마디 남기기…</div><button class="cs">↑</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-08</b> 현재 선택 장소 관리</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">지금 여기</span></div>
+        <div class="screen">
+          <div class="sel-hero">
+            <div class="k">지금 의견이 모인 곳</div>
+            <div class="nm">을지로 골목집</div>
+            <div class="by">현이 3분 전에 바꿈 · 확정 아님, 언제든 변경 가능</div>
+            <div class="row"><button>선택 해제</button><button class="solid">지도에서 보기</button></div>
+          </div>
+          <div class="pooltitle">다른 후보로 바꾸기</div>
+          <div class="poolrow"><div class="gl">🥩</div><div><div class="n">성수 연방스테이크</div><div class="mt">♥ 2 · 💬 1</div></div><button class="pick">이걸로</button></div>
+          <div class="poolrow"><div class="gl">📍</div><div><div class="n">합정 곳간</div><div class="mt">♥ 1 · 💬 0</div></div><button class="pick">이걸로</button></div>
+          <div class="poolrow"><div class="gl">🍝</div><div><div class="n">망원 리코타</div><div class="mt">♥ 1 · 💬 2</div></div><button class="pick">이걸로</button></div>
+          <div style="font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.6">‘지금 여기’는 최종 결정이 아니라 현재 마음이 모인 곳을 보여주는 포인터예요. 누구나 바꿀 수 있어요.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

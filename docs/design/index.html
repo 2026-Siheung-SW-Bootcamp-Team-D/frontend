@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>약속 보드 · 디자인 방향 갤러리</title>
+<style>
+  :root{
+    --bg:#f4f2ec; --ink:#1c1b19; --ink-2:#605d56; --ink-3:#9a968d; --line:#e2ded4;
+    --font:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;padding:56px 24px 100px}
+  .wrap{max-width:1000px;margin:0 auto}
+  .kick{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+  h1{font-size:34px;letter-spacing:-.025em;font-weight:800;margin:10px 0 12px}
+  .lead{font-size:15px;color:var(--ink-2);max-width:660px;line-height:1.65}
+  .meta{margin-top:16px;font-size:12.5px;color:var(--ink-3)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:36px}
+  a.card{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;transition:transform .15s ease,box-shadow .15s ease}
+  a.card:hover{transform:translateY(-3px);box-shadow:0 18px 40px -20px rgba(0,0,0,.4)}
+  .swatch{display:flex;gap:6px;margin-bottom:16px}
+  .swatch i{width:26px;height:26px;border-radius:8px;display:block}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3)}
+  .card h2{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:4px 0 8px}
+  .card p{font-size:13px;color:var(--ink-2);line-height:1.6}
+  .card .feat{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+  .card .feat span{font-size:11px;font-weight:600;color:#514e47;background:var(--bg);border:1px solid var(--line);padding:4px 9px;border-radius:999px}
+  .card .open{margin-top:16px;font-size:13px;font-weight:700;color:var(--ink)}
+  .card .open::after{content:" →"}
+  .section{margin-top:48px}
+  .section h3{font-size:14px;font-weight:800;letter-spacing:.01em;margin-bottom:12px}
+  .rowlist{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .rowlist a,.rowlist div.ri{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit;font-size:13.5px}
+  .rowlist a:last-child,.rowlist div.ri:last-child{border-bottom:0}
+  .rowlist .n{font-weight:700}
+  .rowlist .d{color:var(--ink-3);font-size:12px}
+  .rowlist .go{margin-left:auto;color:var(--ink-3)}
+  .note{margin-top:22px;font-size:12.5px;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-left:3px solid #c9c4b7;border-radius:10px;padding:14px 16px;line-height:1.65}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .steps b{font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+  .steps b.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kick">모여봐 · Candidate Place Board</div>
+  <h1>디자인 방향 갤러리</h1>
+  <p class="lead">모바일 우선 협업 장소 보드의 시각 방향 3안입니다. 세 방향 모두 같은 정보 구조(지도 + 후보 카드 + 현재 선택 + 장소 추가/지역 찾기)와 명세 가드레일을 지키되, <b>지도와 목록의 연결 방식·협업 감정·정보 밀도</b>에서 다른 선택을 합니다. 지도는 정적 placeholder이며, 각 화면은 모바일 폭(375px) 기준입니다.</p>
+  <div class="meta">작성 2026-07-24 · 지도 표현: 정적 placeholder · 반응형: 모바일 폭 중앙정렬 · 폰트: Pretendard 계열</div>
+
+  <div class="steps"><b class="on">1 · 방향 선택 (지금)</b><b>2 · 전체 화면·상태 확장</b><b>3 · React 퍼블리싱(목 데이터)</b><b>4 · API 연동</b></div>
+
+  <a class="card" href="prototype-kok.html" style="margin-top:28px;display:block;border:2px solid #f0552d;background:linear-gradient(180deg,#fff, #fff6f2)">
+    <div class="tag" style="color:#f0552d">★ 인터랙티브 프로토타입 (KOK 레퍼런스 반영)</div>
+    <h2 style="margin-top:6px">모여봐 · 직접 눌러보는 프로토타입</h2>
+    <p>KOK/GATHER ONE SPOT 레퍼런스의 바텀시트·곡률·2버튼 체계·마스코트 핀·‘콕’ 언어를 추출해 반영. 펼쳐놓기가 아니라 <b>탭으로 화면을 이동</b>하는 실동작 목업(홈→입장→보드→상세·콕·댓글→장소추가→지역찾기→주변탐색). 투표 메커니즘은 스펙대로 제외하고 ‘콕=좋아요’·‘지금 여기=현재 선택’으로 매핑.</p>
+    <div class="feat"><span>바텀시트 드래그</span><span>콕 좋아요 토글</span><span>지역찾기 폴링</span><span>코럴+네이비</span></div>
+    <div class="open">프로토타입 열기</div>
+  </a>
+
+  <div class="grid">
+    <a class="card" href="direction-a-mono-map.html">
+      <div class="swatch"><i style="background:#1c1b19"></i><i style="background:#e2603f"></i><i style="background:#f6f4ef;border:1px solid #ddd"></i></div>
+      <div class="tag">DIRECTION A</div>
+      <h2>잔잔한 지도<br/>Mono Map</h2>
+      <p>잉크 모노톤 + 코럴 단색. 지도 우세 + 바텀시트. 순서를 암시하는 숫자 대신 카테고리 글리프로 핀↔카드를 대응합니다.</p>
+      <div class="feat"><span>지도 우세</span><span>모노 + 코럴</span><span>글리프 핀</span></div>
+      <div class="open">6개 화면 보기</div>
+    </a>
+
+    <a class="card" href="direction-b-card-studio.html">
+      <div class="swatch"><i style="background:#3f7d5a"></i><i style="background:#c68a2e"></i><i style="background:#e4efe6"></i></div>
+      <div class="tag">DIRECTION B</div>
+      <h2>모임 노트<br/>Card Studio</h2>
+      <p>세이지 그린 + 카드 중심. 지도는 상단 띠, 무게중심은 후보 카드. 좋아요·댓글을 알약 배지로 또렷하게. 가장 따뜻한 협업 톤.</p>
+      <div class="feat"><span>카드 중심</span><span>세이지 그린</span><span>지역찾기 흐름</span></div>
+      <div class="open">4개 화면 보기</div>
+    </a>
+
+    <a class="card" href="direction-c-bright-board.html">
+      <div class="swatch"><i style="background:#3568e7"></i><i style="background:#16181d"></i><i style="background:#e7eefc"></i></div>
+      <div class="tag">DIRECTION C</div>
+      <h2>선명한 대비<br/>Bright Board</h2>
+      <p>화이트 + 인디고 브랜드색(#3568E7). 낮은 라운드·고밀도. 기존 Figma 브랜드 결정과 연속성. 후보가 많아도 흐트러지지 않음.</p>
+      <div class="feat"><span>인디고 브랜드</span><span>고밀도</span><span>입장·주변탐색</span></div>
+      <div class="open">3개 화면 보기</div>
+    </a>
+  </div>
+
+  <div class="note">
+    <b>공통 가드레일 (세 방향 모두 준수)</b><br/>
+    · 현재 선택 = “지금 여기 어때요?” — ‘확정/최종’ 문구 없음, 누구나 변경·해제<br/>
+    · 순서로 오해되는 숫자 핀 사용 안 함 (카테고리 글리프로 대응)<br/>
+    · 좋아요 상태는 색만이 아니라 아이콘 채움 + 텍스트 병행<br/>
+    · 장소 추가 = 항상 보이는 주 행동 / 지역 찾기 = 한 단계 낮은 보조<br/>
+    · 지역 찾기 = 정답 추천이 아닌 “탐색 시작 지점” / 타인 출발지는 등록 여부만<br/>
+    · 투표·코스·번호지도·확정·출발안내·공개공유·별점 없음 (MVP 범위 밖)
+  </div>
+
+  <div class="section">
+    <h3>화면 커버리지 (3안 합산으로 핵심 흐름 전부 확인 가능)</h3>
+    <div class="rowlist">
+      <div class="ri"><span class="n">PG-01 홈</span><span class="d">· 방향 A</span></div>
+      <div class="ri"><span class="n">PG-03·04 참여자 입장·출발지</span><span class="d">· 방향 C</span></div>
+      <div class="ri"><span class="n">PG-05 후보 보드 (기본/빈 상태)</span><span class="d">· 방향 A·B·C</span></div>
+      <div class="ri"><span class="n">PG-06 장소 검색·추가</span><span class="d">· 방향 A</span></div>
+      <div class="ri"><span class="n">PG-07 장소 상세·좋아요·댓글</span><span class="d">· 방향 A·B</span></div>
+      <div class="ri"><span class="n">PG-08 현재 선택 관리</span><span class="d">· 방향 A</span></div>
+      <div class="ri"><span class="n">PG-09 지역 찾기 (준비·진행·결과)</span><span class="d">· 방향 B</span></div>
+      <div class="ri"><span class="n">PG-10 제안지역·임의좌표 주변 탐색</span><span class="d">· 방향 C</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>이전 세션 산출물 (참고 · 이번 3안과 별개)</h3>
+    <div class="rowlist">
+      <a href="2026-07-24-high-end-interactive-board.html"><span class="n">high-end-interactive-board</span><span class="d">· 파스텔 다색 + Syne 폰트 + 모션. 이번 3안은 이 톤과 의도적으로 다르게 잡음</span><span class="go">›</span></a>
+      <a href="2026-07-24-visual-direction-preview.html"><span class="n">visual-direction-preview</span><span class="d">· 초기 색 방향 미리보기</span><span class="go">›</span></a>
+    </div>
+    <div class="note" style="border-left-color:#e2603f">다음 단계: 위 3안 중 <b>하나를 고르시면</b>(혼합·부분 수정 요청도 환영), 그 방향으로 기본·로딩·빈·오류·선택 상태를 포함한 전체 화면과 디자인 토큰·재사용 컴포넌트를 확장한 뒤 React 퍼블리싱(목 데이터)으로 넘어갑니다.</div>
+  </div>
+</div>
+</body>
+</html>

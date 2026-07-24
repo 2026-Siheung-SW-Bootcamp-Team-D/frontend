@@ -1,0 +1,1586 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f5f2">
+  <title>같이 고르는 장소 보드 — High-end Concept</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #10110f;
+      --ink-soft: #5f625c;
+      --canvas: #f4f5f2;
+      --surface: rgba(255, 255, 255, 0.86);
+      --surface-solid: #ffffff;
+      --hairline: rgba(16, 17, 15, 0.075);
+      --hairline-strong: rgba(16, 17, 15, 0.12);
+      --sage: #dce9dc;
+      --sage-ink: #315a3a;
+      --coral: #f3d8cc;
+      --coral-ink: #7d3d2d;
+      --lavender: #e8e0f3;
+      --lavender-ink: #58446f;
+      --sand: #eee3cd;
+      --spring: cubic-bezier(0.32, 0.72, 0, 1);
+      --shadow-air: 0 32px 80px rgba(26, 31, 24, 0.07), 0 8px 24px rgba(26, 31, 24, 0.035);
+      --shadow-float: 0 48px 120px rgba(26, 31, 24, 0.11), 0 12px 40px rgba(26, 31, 24, 0.05);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--canvas);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 8%, rgba(220, 233, 220, 0.8), transparent 28rem),
+        radial-gradient(circle at 88% 35%, rgba(232, 224, 243, 0.62), transparent 30rem),
+        var(--canvas);
+      font-family: "Plus Jakarta Sans", "Avenir Next", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      content: "";
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+
+    .island-nav {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      width: min(94vw, 620px);
+      padding: 8px 9px 8px 18px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      border-radius: 999px;
+      background: rgba(247, 248, 245, 0.72);
+      box-shadow: 0 16px 52px rgba(20, 23, 18, 0.08);
+      backdrop-filter: blur(24px) saturate(1.2);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: auto;
+      font-family: "Syne", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      background: var(--ink);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.24);
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      position: absolute;
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sage);
+    }
+
+    .brand-mark::before { top: 6px; left: 6px; }
+    .brand-mark::after { right: 5px; bottom: 5px; }
+
+    .nav-link {
+      padding: 8px 2px;
+      color: var(--ink-soft);
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 500ms var(--spring), transform 500ms var(--spring);
+    }
+
+    .nav-link:hover {
+      color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .menu-trigger {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: var(--ink);
+      cursor: pointer;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.22);
+    }
+
+    .menu-trigger span {
+      position: absolute;
+      left: 13px;
+      width: 14px;
+      height: 1px;
+      background: #fff;
+      transition: transform 700ms var(--spring), top 700ms var(--spring);
+    }
+
+    .menu-trigger span:first-child { top: 16px; }
+    .menu-trigger span:last-child { top: 23px; }
+    .menu-trigger[aria-expanded="true"] span:first-child { top: 20px; transform: rotate(45deg); }
+    .menu-trigger[aria-expanded="true"] span:last-child { top: 20px; transform: rotate(-45deg); }
+
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      visibility: hidden;
+      opacity: 0;
+      background: rgba(242, 244, 239, 0.86);
+      backdrop-filter: blur(32px);
+      transition: opacity 700ms var(--spring), visibility 700ms var(--spring);
+    }
+
+    .menu-overlay.open { visibility: visible; opacity: 1; }
+
+    .menu-links {
+      display: grid;
+      gap: 18px;
+      text-align: center;
+    }
+
+    .menu-links a {
+      color: var(--ink);
+      font-family: "Syne", sans-serif;
+      font-size: clamp(36px, 6vw, 76px);
+      font-weight: 600;
+      letter-spacing: -0.06em;
+      text-decoration: none;
+      opacity: 0;
+      transform: translateY(42px);
+      transition: transform 900ms var(--spring), opacity 900ms var(--spring);
+    }
+
+    .menu-overlay.open .menu-links a { opacity: 1; transform: translateY(0); }
+    .menu-overlay.open .menu-links a:nth-child(2) { transition-delay: 80ms; }
+    .menu-overlay.open .menu-links a:nth-child(3) { transition-delay: 160ms; }
+
+    main { position: relative; z-index: 5; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(520px, 1.1fr);
+      align-items: center;
+      gap: 4vw;
+      min-height: 100dvh;
+      padding: 150px max(5vw, 28px) 100px;
+    }
+
+    .hero-copy { max-width: 760px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border: 1px solid rgba(16, 17, 15, 0.07);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.58);
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sage-ink);
+      box-shadow: 0 0 0 5px rgba(49, 90, 58, 0.08);
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 820px;
+      margin: 30px 0 28px;
+      font-family: "Syne", sans-serif;
+      font-size: clamp(56px, 7.2vw, 116px);
+      font-weight: 600;
+      line-height: 0.88;
+      letter-spacing: -0.075em;
+    }
+
+    .hero-copy > p {
+      max-width: 620px;
+      margin-bottom: 38px;
+      color: var(--ink-soft);
+      font-size: clamp(15px, 1.25vw, 19px);
+      line-height: 1.75;
+      letter-spacing: -0.015em;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .island-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      min-height: 56px;
+      padding: 7px 8px 7px 22px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 16px 36px rgba(16, 17, 15, 0.12);
+      transition: transform 700ms var(--spring), box-shadow 700ms var(--spring);
+    }
+
+    .island-button:hover {
+      transform: translateY(-3px);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 24px 48px rgba(16, 17, 15, 0.16);
+    }
+
+    .island-button:active { transform: scale(0.98); }
+
+    .button-orbit {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      transition: transform 700ms var(--spring), background 700ms var(--spring);
+    }
+
+    .island-button:hover .button-orbit {
+      transform: translate(3px, -2px) scale(1.05);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .button-orbit svg { width: 17px; height: 17px; }
+
+    .quiet-action {
+      padding: 13px 16px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-soft);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 500ms var(--spring), transform 500ms var(--spring);
+    }
+
+    .quiet-action:hover { color: var(--ink); transform: translateX(3px); }
+
+    .cascade {
+      position: relative;
+      min-height: 700px;
+      perspective: 1400px;
+    }
+
+    .device-shell {
+      position: absolute;
+      width: min(390px, 45vw);
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.76);
+      border-radius: 40px;
+      background: rgba(16, 17, 15, 0.045);
+      box-shadow: var(--shadow-float);
+      transition: transform 900ms var(--spring), filter 900ms var(--spring);
+    }
+
+    .device-shell:nth-child(1) {
+      top: 4%;
+      left: 2%;
+      z-index: 2;
+      transform: rotate(-5deg) translateZ(-40px);
+      filter: saturate(0.82);
+    }
+
+    .device-shell:nth-child(2) {
+      top: 12%;
+      right: 4%;
+      z-index: 3;
+      transform: rotate(3deg);
+    }
+
+    .device-shell:nth-child(3) {
+      right: 25%;
+      bottom: -1%;
+      z-index: 4;
+      width: 300px;
+      transform: rotate(-2deg) translateZ(40px);
+    }
+
+    .cascade:hover .device-shell:nth-child(1) { transform: rotate(-2deg) translate(-14px, -10px); }
+    .cascade:hover .device-shell:nth-child(2) { transform: rotate(1deg) translate(12px, -16px); }
+    .cascade:hover .device-shell:nth-child(3) { transform: rotate(1deg) translateY(-20px); }
+
+    .device {
+      overflow: hidden;
+      min-height: 650px;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.92);
+    }
+
+    .device-mini { min-height: 370px; }
+
+    .device-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 22px 14px;
+    }
+
+    .device-top strong {
+      font-family: "Syne", sans-serif;
+      font-size: 13px;
+      letter-spacing: -0.04em;
+    }
+
+    .micro-pill {
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--canvas);
+      color: var(--ink-soft);
+      font-size: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .map-preview {
+      position: relative;
+      height: 270px;
+      overflow: hidden;
+      background: #eceee9;
+    }
+
+    .map-preview svg { width: 100%; height: 100%; }
+
+    .mini-sheet {
+      margin-top: -18px;
+      padding: 18px 18px 22px;
+      border-radius: 24px 24px 0 0;
+      background: #fff;
+    }
+
+    .sheet-handle {
+      width: 34px;
+      height: 3px;
+      margin: 0 auto 18px;
+      border-radius: 999px;
+      background: rgba(16, 17, 15, 0.12);
+    }
+
+    .mini-sheet h3 {
+      margin-bottom: 12px;
+      font-family: "Syne", sans-serif;
+      font-size: 17px;
+      letter-spacing: -0.045em;
+    }
+
+    .tiny-place {
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--canvas);
+    }
+
+    .tiny-place strong { display: block; margin-bottom: 4px; font-size: 10px; }
+    .tiny-place span { color: var(--ink-soft); font-size: 8px; }
+
+    .invite-card {
+      padding: 22px;
+      background: var(--coral);
+    }
+
+    .invite-card small {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--coral-ink);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+    }
+
+    .invite-code {
+      font-family: "Syne", sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .section {
+      padding: 130px max(5vw, 28px);
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: 0.7fr 1.3fr;
+      gap: 7vw;
+      align-items: end;
+      margin-bottom: 72px;
+    }
+
+    .section-heading h2 {
+      margin-bottom: 0;
+      font-family: "Syne", sans-serif;
+      font-size: clamp(44px, 6.4vw, 98px);
+      line-height: 0.94;
+      letter-spacing: -0.075em;
+    }
+
+    .section-heading p {
+      max-width: 600px;
+      margin-bottom: 8px;
+      color: var(--ink-soft);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .studio-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .double-bezel {
+      padding: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 34px;
+      background: rgba(16, 17, 15, 0.04);
+      box-shadow: var(--shadow-air);
+    }
+
+    .bezel-core {
+      overflow: hidden;
+      border-radius: 27px;
+      background: var(--surface);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.95);
+    }
+
+    .board-shell { min-height: 810px; }
+
+    .board-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 26px;
+    }
+
+    .board-title {
+      margin-right: auto;
+      font-family: "Syne", sans-serif;
+      font-size: clamp(17px, 2vw, 24px);
+      font-weight: 700;
+      letter-spacing: -0.045em;
+    }
+
+    .participants {
+      display: flex;
+      margin-right: 2px;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      margin-left: -8px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: var(--sand);
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .avatar:nth-child(2) { background: var(--lavender); }
+    .avatar:nth-child(3) { background: var(--sage); }
+
+    .small-button {
+      padding: 10px 13px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--canvas);
+      color: var(--ink);
+      font-size: 9px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 600ms var(--spring), background 600ms var(--spring);
+    }
+
+    .small-button:hover { transform: translateY(-2px); background: #e9ebe6; }
+
+    .selection-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 22px 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--sage);
+      color: var(--sage-ink);
+      opacity: 0;
+      transform: translateY(-12px);
+      pointer-events: none;
+      transition: transform 800ms var(--spring), opacity 800ms var(--spring);
+    }
+
+    .selection-banner.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    .selection-banner span {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .selection-banner strong { color: var(--ink); font-size: 12px; }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
+      min-height: 704px;
+    }
+
+    .live-map {
+      position: relative;
+      min-height: 704px;
+      overflow: hidden;
+      background: #e9ece7;
+    }
+
+    .live-map > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    .map-pin {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 6px solid rgba(255, 255, 255, 0.88);
+      border-radius: 50% 50% 50% 12px;
+      background: var(--ink);
+      box-shadow: 0 12px 26px rgba(16, 17, 15, 0.18);
+      cursor: pointer;
+      transform: rotate(-45deg);
+      transition: transform 700ms var(--spring), background 700ms var(--spring), box-shadow 700ms var(--spring);
+    }
+
+    .map-pin::after {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      content: "";
+    }
+
+    .map-pin:hover { transform: rotate(-45deg) scale(1.12) translate(2px, -2px); }
+    .map-pin.active {
+      background: var(--sage-ink);
+      box-shadow: 0 16px 36px rgba(49, 90, 58, 0.28);
+      transform: rotate(-45deg) scale(1.16);
+    }
+
+    .map-pin[data-place="urban"] { top: 27%; left: 58%; }
+    .map-pin[data-place="forest"] { top: 53%; left: 27%; }
+    .map-pin[data-place="studio"] { top: 67%; left: 68%; }
+    .map-pin[data-place="new"] { top: 38%; left: 38%; display: none; }
+    .map-pin[data-place="new"].added { display: grid; animation: pin-in 900ms var(--spring) both; }
+
+    @keyframes pin-in {
+      from { opacity: 0; transform: rotate(-45deg) translateY(-24px) scale(0.6); }
+      to { opacity: 1; transform: rotate(-45deg) translateY(0) scale(1); }
+    }
+
+    .candidate-panel {
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .panel-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .candidate-list { display: grid; gap: 12px; }
+
+    .candidate-shell {
+      padding: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 21px;
+      background: rgba(16, 17, 15, 0.035);
+      transition: transform 700ms var(--spring), box-shadow 700ms var(--spring);
+    }
+
+    .candidate-shell:hover { transform: translateY(-4px); box-shadow: 0 18px 46px rgba(16, 17, 15, 0.07); }
+    .candidate-shell.active { transform: translateX(-8px); background: rgba(49, 90, 58, 0.12); }
+
+    .candidate {
+      position: relative;
+      padding: 16px;
+      border-radius: 17px;
+      background: #fff;
+      cursor: pointer;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    }
+
+    .candidate-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .place-index {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      flex: none;
+      border-radius: 9px;
+      background: var(--canvas);
+      font-family: "Syne", sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .candidate h3 {
+      margin: 1px 0 5px;
+      font-family: "Syne", sans-serif;
+      font-size: 13px;
+      letter-spacing: -0.035em;
+    }
+
+    .candidate p {
+      margin-bottom: 0;
+      color: var(--ink-soft);
+      font-size: 8px;
+      line-height: 1.5;
+    }
+
+    .candidate-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .meta-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--canvas);
+      color: var(--ink-soft);
+      font-size: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 600ms var(--spring), background 600ms var(--spring), color 600ms var(--spring);
+    }
+
+    .meta-action:hover { transform: translateY(-2px); }
+    .meta-action.liked { background: var(--coral); color: var(--coral-ink); }
+
+    .add-place {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 650ms var(--spring), box-shadow 650ms var(--spring);
+    }
+
+    .add-place:hover { transform: translateY(-3px); box-shadow: 0 18px 36px rgba(16, 17, 15, 0.14); }
+    .add-place:active { transform: scale(0.98); }
+
+    .side-stack {
+      display: grid;
+      gap: 28px;
+    }
+
+    .insight-card { padding: 30px; }
+
+    .insight-card .number {
+      display: block;
+      margin-bottom: 26px;
+      color: var(--ink-soft);
+      font-family: "Syne", sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .insight-card h3 {
+      margin-bottom: 12px;
+      font-family: "Syne", sans-serif;
+      font-size: 27px;
+      line-height: 1.05;
+      letter-spacing: -0.055em;
+    }
+
+    .insight-card p {
+      margin-bottom: 0;
+      color: var(--ink-soft);
+      font-size: 12px;
+      line-height: 1.75;
+    }
+
+    .insight-card.sage { background: var(--sage); }
+    .insight-card.lavender { background: var(--lavender); }
+
+    .detail-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 40;
+      width: min(520px, 100%);
+      height: 100dvh;
+      padding: 8px;
+      visibility: hidden;
+      opacity: 0;
+      transform: translateX(105%);
+      transition: transform 900ms var(--spring), opacity 900ms var(--spring), visibility 900ms var(--spring);
+    }
+
+    .detail-drawer.open {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .drawer-core {
+      height: 100%;
+      overflow-y: auto;
+      padding: 38px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow-float);
+      backdrop-filter: blur(28px);
+    }
+
+    .drawer-close {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      margin-left: auto;
+      border: 0;
+      border-radius: 50%;
+      background: var(--canvas);
+      cursor: pointer;
+    }
+
+    .drawer-visual {
+      display: grid;
+      place-items: end start;
+      height: 240px;
+      margin: 24px 0 32px;
+      padding: 24px;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.7), transparent 10rem),
+        var(--sage);
+    }
+
+    .drawer-visual span {
+      font-family: "Syne", sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .drawer-core h2 {
+      margin-bottom: 12px;
+      font-family: "Syne", sans-serif;
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: 0.96;
+      letter-spacing: -0.07em;
+    }
+
+    .drawer-core > p {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .drawer-actions {
+      display: flex;
+      gap: 10px;
+      margin: 26px 0;
+    }
+
+    .drawer-actions button { flex: 1; }
+
+    .current-choice {
+      padding: 15px 18px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .external-link {
+      padding: 15px 18px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--canvas);
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .comments { margin-top: 34px; }
+
+    .comment {
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(16, 17, 15, 0.075);
+    }
+
+    .comment strong { display: block; margin-bottom: 6px; font-size: 10px; }
+    .comment span { color: var(--ink-soft); font-size: 11px; }
+
+    .invite-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      visibility: hidden;
+      opacity: 0;
+      background: rgba(238, 240, 235, 0.84);
+      backdrop-filter: blur(30px);
+      transition: opacity 800ms var(--spring), visibility 800ms var(--spring);
+    }
+
+    .invite-overlay.open { visibility: visible; opacity: 1; }
+
+    .invite-dialog {
+      width: min(680px, 100%);
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 38px;
+      background: rgba(16, 17, 15, 0.04);
+      box-shadow: var(--shadow-float);
+      opacity: 0;
+      transform: translateY(50px) scale(0.96);
+      transition: transform 900ms var(--spring), opacity 900ms var(--spring);
+    }
+
+    .invite-overlay.open .invite-dialog { opacity: 1; transform: translateY(0) scale(1); }
+
+    .invite-core {
+      padding: 42px;
+      border-radius: 30px;
+      background: #fff;
+    }
+
+    .dialog-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 44px;
+    }
+
+    .dialog-head h2 {
+      max-width: 440px;
+      margin-bottom: 0;
+      font-family: "Syne", sans-serif;
+      font-size: clamp(38px, 6vw, 64px);
+      line-height: 0.95;
+      letter-spacing: -0.07em;
+    }
+
+    .share-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+    }
+
+    .share-item {
+      padding: 22px;
+      border-radius: 22px;
+      background: var(--canvas);
+    }
+
+    .share-item.code { background: var(--coral); }
+    .share-item small { display: block; margin-bottom: 14px; color: var(--ink-soft); font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+    .share-item strong { display: block; margin-bottom: 18px; font-family: "Syne", sans-serif; font-size: 19px; letter-spacing: -0.03em; overflow-wrap: anywhere; }
+    .share-item.code strong { font-size: 30px; letter-spacing: 0.1em; }
+
+    .copy-button {
+      padding: 11px 14px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 600ms var(--spring);
+    }
+
+    .copy-button:active { transform: scale(0.96); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      z-index: 60;
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      opacity: 0;
+      transform: translate(-50%, 20px) scale(0.95);
+      pointer-events: none;
+      transition: transform 700ms var(--spring), opacity 700ms var(--spring);
+    }
+
+    .toast.visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+    .reveal {
+      opacity: 0;
+      filter: blur(10px);
+      transform: translateY(60px);
+      transition: transform 1000ms var(--spring), opacity 1000ms var(--spring), filter 1000ms var(--spring);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1000px) {
+      .hero { grid-template-columns: 1fr; padding-top: 150px; }
+      .cascade { min-height: 680px; margin-top: 20px; }
+      .section-heading, .studio-layout { grid-template-columns: 1fr; }
+      .board-grid { grid-template-columns: 1fr; }
+      .live-map { min-height: 520px; }
+      .candidate-panel { min-height: auto; }
+      .side-stack { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 767px) {
+      .nav-link { display: none; }
+      .hero, .section { padding-right: 16px; padding-left: 16px; }
+      .hero { display: block; min-height: 100dvh; padding-top: 130px; padding-bottom: 60px; }
+      h1 { font-size: clamp(54px, 17vw, 80px); }
+      .cascade {
+        display: grid;
+        gap: 20px;
+        min-height: auto;
+        margin-top: 72px;
+      }
+      .device-shell,
+      .device-shell:nth-child(1),
+      .device-shell:nth-child(2),
+      .device-shell:nth-child(3) {
+        position: relative;
+        inset: auto;
+        width: 100%;
+        transform: none;
+        filter: none;
+      }
+      .cascade:hover .device-shell:nth-child(1),
+      .cascade:hover .device-shell:nth-child(2),
+      .cascade:hover .device-shell:nth-child(3) { transform: none; }
+      .device { min-height: 520px; }
+      .device-mini { min-height: 360px; }
+      .section { padding-top: 96px; padding-bottom: 96px; }
+      .section-heading { margin-bottom: 44px; }
+      .section-heading h2 { font-size: 52px; }
+      .board-header { flex-wrap: wrap; }
+      .participants { order: 3; width: 100%; margin-left: 8px; }
+      .board-grid { display: block; }
+      .live-map { min-height: 430px; }
+      .side-stack { grid-template-columns: 1fr; }
+      .drawer-core { padding: 24px; border-radius: 24px; }
+      .drawer-actions { flex-direction: column; }
+      .invite-core { padding: 26px; }
+      .share-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .reveal { opacity: 1; filter: none; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="island-nav" aria-label="주요 메뉴">
+    <a class="brand" href="#top" aria-label="장소 보드 처음으로">
+      <span class="brand-mark" aria-hidden="true"></span>
+      모임의 자리
+    </a>
+    <a class="nav-link" href="#experience">경험</a>
+    <a class="nav-link" href="#board">보드</a>
+    <button class="menu-trigger" type="button" aria-label="메뉴 열기" aria-expanded="false">
+      <span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="menu-overlay" aria-hidden="true">
+    <div class="menu-links">
+      <a href="#experience">함께 고르는 경험</a>
+      <a href="#board">후보 장소 보드</a>
+      <a href="#board" data-open-invite>친구 초대하기</a>
+    </div>
+  </div>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy reveal">
+        <span class="eyebrow"><i></i> Shared place board / Concept 03</span>
+        <h1>한 곳을 정하기 전,<br>마음을 먼저 모아요.</h1>
+        <p>추천 하나를 받는 대신, 친구들이 각자 가고 싶은 곳을 쌓고 비교합니다. 지도와 카드, 좋아요와 댓글이 같은 대화를 이어갑니다.</p>
+        <div class="cta-row">
+          <button class="island-button" type="button" data-scroll-board>
+            보드 직접 눌러보기
+            <span class="button-orbit" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+          <button class="quiet-action" type="button" data-open-invite>초대 화면 보기 →</button>
+        </div>
+      </div>
+
+      <div class="cascade reveal" aria-label="제품 화면 미리보기">
+        <div class="device-shell">
+          <div class="device">
+            <div class="device-top">
+              <strong>주말에 어디 갈까?</strong>
+              <span class="micro-pill">참여자 4</span>
+            </div>
+            <div class="map-preview">
+              <svg viewBox="0 0 390 270" aria-hidden="true">
+                <rect width="390" height="270" fill="#e9ece7"/>
+                <path d="M-30 52h450M-30 178h450M90-30v340M275-30v340" stroke="#fff" stroke-width="14"/>
+                <path d="M-20 225 420 35" stroke="#f8f9f6" stroke-width="10"/>
+                <circle cx="248" cy="105" r="10" fill="#10110f"/>
+                <circle cx="116" cy="188" r="7" fill="#696d66"/>
+                <circle cx="314" cy="212" r="7" fill="#696d66"/>
+              </svg>
+            </div>
+            <div class="mini-sheet">
+              <div class="sheet-handle"></div>
+              <h3>후보 3곳</h3>
+              <div class="tiny-place">
+                <strong>어반소스 성수</strong>
+                <span>카페 · 좋아요 3 · 댓글 2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="device-shell">
+          <div class="device">
+            <div class="device-top">
+              <strong>어반소스 성수</strong>
+              <span class="micro-pill">닫기</span>
+            </div>
+            <div class="map-preview" style="height:210px;background:#dce9dc">
+              <svg viewBox="0 0 390 210" aria-hidden="true">
+                <path d="M38 162C85 88 154 48 226 55c57 6 94 39 126 90" fill="none" stroke="rgba(49,90,58,.32)" stroke-width="2"/>
+                <circle cx="224" cy="55" r="38" fill="rgba(255,255,255,.55)"/>
+                <circle cx="224" cy="55" r="8" fill="#315a3a"/>
+              </svg>
+            </div>
+            <div class="mini-sheet">
+              <div class="sheet-handle"></div>
+              <h3>지금 여기 어때요?</h3>
+              <div class="tiny-place" style="background:#f4f5f2">
+                <strong>의견이 모이고 있어요</strong>
+                <span>좋아요 4 · 댓글 3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="device-shell">
+          <div class="device device-mini">
+            <div class="device-top">
+              <strong>친구 초대하기</strong>
+              <span class="micro-pill">닫기</span>
+            </div>
+            <div class="invite-card">
+              <small>참여 코드</small>
+              <div class="invite-code">AB12CD</div>
+            </div>
+            <div class="mini-sheet" style="margin-top:0">
+              <div class="tiny-place">
+                <strong>링크로 바로 참여</strong>
+                <span>meet.place/join/AB12CD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="experience">
+      <div class="section-heading reveal">
+        <h2>지도는 배경.<br>대화가 중심.</h2>
+        <p>핀을 누르면 후보 카드가 응답하고, 카드를 누르면 상세 의견이 이어집니다. 한 번의 탭이 다음 화면에서 길을 잃지 않도록 모든 상태를 연결했습니다.</p>
+      </div>
+
+      <div class="studio-layout" id="board">
+        <div class="double-bezel reveal">
+          <div class="bezel-core board-shell">
+            <div class="board-header">
+              <div class="board-title">주말에 어디 갈까?</div>
+              <div class="participants" aria-label="참여자 4명">
+                <span class="avatar">민</span>
+                <span class="avatar">지</span>
+                <span class="avatar">선</span>
+              </div>
+              <button class="small-button" type="button" data-open-invite>초대·코드</button>
+            </div>
+
+            <div class="selection-banner" aria-live="polite">
+              <span>지금 여기 어때요?</span>
+              <strong data-selection-name>어반소스 성수</strong>
+            </div>
+
+            <div class="board-grid">
+              <div class="live-map" aria-label="후보 장소 지도">
+                <svg viewBox="0 0 900 704" preserveAspectRatio="none" aria-hidden="true">
+                  <rect width="900" height="704" fill="#e9ece7"/>
+                  <path d="M-40 118h980M-40 412h980M196-40v800M625-40v800" stroke="#f9faf7" stroke-width="34"/>
+                  <path d="M-80 630 970 80M20-40l710 800" stroke="#f5f7f3" stroke-width="24"/>
+                  <path d="M0 244h900M402 0v704" stroke="rgba(16,17,15,.045)" stroke-width="2" stroke-dasharray="7 10"/>
+                </svg>
+                <button class="map-pin active" type="button" data-place="urban" aria-label="어반소스 성수 핀"></button>
+                <button class="map-pin" type="button" data-place="forest" aria-label="서울숲 피크닉장 핀"></button>
+                <button class="map-pin" type="button" data-place="studio" aria-label="연무장 스튜디오 핀"></button>
+                <button class="map-pin" type="button" data-place="new" aria-label="새로 추가한 장소 핀"></button>
+              </div>
+
+              <aside class="candidate-panel">
+                <div class="panel-kicker">
+                  <span>Candidate board</span>
+                  <span data-candidate-count>3 places</span>
+                </div>
+
+                <div class="candidate-list">
+                  <div class="candidate-shell active" data-place="urban">
+                    <article class="candidate" tabindex="0">
+                      <div class="candidate-head">
+                        <span class="place-index">01</span>
+                        <div>
+                          <h3>어반소스 성수</h3>
+                          <p>카페 · 민지가 추가</p>
+                        </div>
+                      </div>
+                      <div class="candidate-meta">
+                        <button class="meta-action like-button" type="button" aria-label="어반소스 성수 좋아요"><span>♡</span><b>3</b></button>
+                        <span class="meta-action">댓글 2</span>
+                      </div>
+                    </article>
+                  </div>
+
+                  <div class="candidate-shell" data-place="forest">
+                    <article class="candidate" tabindex="0">
+                      <div class="candidate-head">
+                        <span class="place-index">02</span>
+                        <div>
+                          <h3>서울숲 피크닉장</h3>
+                          <p>공원 · 지우가 추가</p>
+                        </div>
+                      </div>
+                      <div class="candidate-meta">
+                        <button class="meta-action like-button" type="button" aria-label="서울숲 피크닉장 좋아요"><span>♡</span><b>2</b></button>
+                        <span class="meta-action">댓글 1</span>
+                      </div>
+                    </article>
+                  </div>
+
+                  <div class="candidate-shell" data-place="studio">
+                    <article class="candidate" tabindex="0">
+                      <div class="candidate-head">
+                        <span class="place-index">03</span>
+                        <div>
+                          <h3>연무장 스튜디오</h3>
+                          <p>문화공간 · 선우가 추가</p>
+                        </div>
+                      </div>
+                      <div class="candidate-meta">
+                        <button class="meta-action like-button" type="button" aria-label="연무장 스튜디오 좋아요"><span>♡</span><b>1</b></button>
+                        <span class="meta-action">댓글 3</span>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+                <button class="add-place" type="button" data-add-place>+ 새 후보를 보드에 추가</button>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-stack">
+          <div class="double-bezel reveal">
+            <div class="bezel-core insight-card sage">
+              <span class="number">01 / TAP</span>
+              <h3>핀과 카드는 같은 장소를 말해요.</h3>
+              <p>지도 핀을 누르면 대응하는 카드가 앞으로 나옵니다. 카드 선택은 상세 의견으로 이어집니다.</p>
+            </div>
+          </div>
+          <div class="double-bezel reveal">
+            <div class="bezel-core insight-card lavender">
+              <span class="number">02 / CHOOSE</span>
+              <h3>현재 선택은 결론이 아니에요.</h3>
+              <p>“지금 여기 어때요?”는 의견이 모이는 위치를 가볍게 가리킬 뿐, 투표나 확정 절차를 만들지 않습니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="detail-drawer" aria-hidden="true">
+    <div class="drawer-core">
+      <button class="drawer-close" type="button" aria-label="장소 상세 닫기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="drawer-visual"><span data-detail-category>카페 · 성수동</span></div>
+      <h2 data-detail-name>어반소스 성수</h2>
+      <p data-detail-description>넓은 테라스와 긴 테이블이 있어 여러 명이 함께 머물기 좋은 후보예요.</p>
+      <div class="drawer-actions">
+        <button class="current-choice" type="button">지금 여기 어때요?</button>
+        <button class="external-link" type="button">외부 지도에서 보기</button>
+      </div>
+      <div class="comments">
+        <div class="panel-kicker"><span>Comments</span><span>2 opinions</span></div>
+        <div class="comment"><strong>지우</strong><span>여기 테라스가 좋아 보여요.</span></div>
+        <div class="comment"><strong>민지</strong><span>주말에는 조금 붐빌 수 있어요.</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="invite-overlay" aria-hidden="true">
+    <div class="invite-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title">
+      <div class="invite-core">
+        <div class="dialog-head">
+          <h2 id="invite-title">같이 고를 사람을 불러보세요.</h2>
+          <button class="drawer-close invite-close" type="button" aria-label="초대 화면 닫기">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="share-grid">
+          <div class="share-item">
+            <small>초대 링크</small>
+            <strong>meet.place/join/AB12CD</strong>
+            <button class="copy-button" type="button" data-copy="링크">링크 복사</button>
+          </div>
+          <div class="share-item code">
+            <small>참여 코드</small>
+            <strong>AB12CD</strong>
+            <button class="copy-button" type="button" data-copy="코드">코드 복사</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const placeData = {
+      urban: {
+        name: "어반소스 성수",
+        category: "카페 · 성수동",
+        description: "넓은 테라스와 긴 테이블이 있어 여러 명이 함께 머물기 좋은 후보예요."
+      },
+      forest: {
+        name: "서울숲 피크닉장",
+        category: "공원 · 서울숲",
+        description: "간단한 음식을 가져와 오래 이야기하기 좋은 야외 후보예요."
+      },
+      studio: {
+        name: "연무장 스튜디오",
+        category: "문화공간 · 연무장길",
+        description: "전시를 보고 주변 식당까지 함께 둘러볼 수 있는 후보예요."
+      },
+      new: {
+        name: "건대 작은 식탁",
+        category: "음식점 · 건대입구",
+        description: "지역 탐색에서 찾아 방금 후보 보드에 추가한 장소예요."
+      }
+    };
+
+    const menuTrigger = document.querySelector(".menu-trigger");
+    const menuOverlay = document.querySelector(".menu-overlay");
+    const detailDrawer = document.querySelector(".detail-drawer");
+    const inviteOverlay = document.querySelector(".invite-overlay");
+    const toast = document.querySelector(".toast");
+    let activePlace = "urban";
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2200);
+    }
+
+    function toggleMenu(force) {
+      const open = typeof force === "boolean" ? force : !menuOverlay.classList.contains("open");
+      menuOverlay.classList.toggle("open", open);
+      menuOverlay.setAttribute("aria-hidden", String(!open));
+      menuTrigger.setAttribute("aria-expanded", String(open));
+      document.body.style.overflow = open ? "hidden" : "";
+    }
+
+    function selectPlace(id, openDetail = false) {
+      activePlace = id;
+      document.querySelectorAll(".map-pin").forEach(pin => {
+        pin.classList.toggle("active", pin.dataset.place === id);
+      });
+      document.querySelectorAll(".candidate-shell").forEach(card => {
+        card.classList.toggle("active", card.dataset.place === id);
+      });
+      document.querySelector(`[data-place="${id}"].candidate-shell`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+      if (openDetail) openDrawer(id);
+    }
+
+    function openDrawer(id) {
+      const place = placeData[id];
+      document.querySelector("[data-detail-name]").textContent = place.name;
+      document.querySelector("[data-detail-category]").textContent = place.category;
+      document.querySelector("[data-detail-description]").textContent = place.description;
+      detailDrawer.classList.add("open");
+      detailDrawer.setAttribute("aria-hidden", "false");
+    }
+
+    function closeDrawer() {
+      detailDrawer.classList.remove("open");
+      detailDrawer.setAttribute("aria-hidden", "true");
+    }
+
+    function openInvite() {
+      toggleMenu(false);
+      inviteOverlay.classList.add("open");
+      inviteOverlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeInvite() {
+      inviteOverlay.classList.remove("open");
+      inviteOverlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    menuTrigger.addEventListener("click", () => toggleMenu());
+    menuOverlay.addEventListener("click", event => {
+      if (event.target.matches("a")) toggleMenu(false);
+    });
+
+    document.querySelectorAll("[data-scroll-board]").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelector("#board").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    document.querySelectorAll("[data-open-invite]").forEach(button => {
+      button.addEventListener("click", openInvite);
+    });
+
+    document.querySelector(".invite-close").addEventListener("click", closeInvite);
+    inviteOverlay.addEventListener("click", event => {
+      if (event.target === inviteOverlay) closeInvite();
+    });
+
+    document.querySelectorAll(".map-pin").forEach(pin => {
+      pin.addEventListener("click", () => selectPlace(pin.dataset.place));
+    });
+
+    document.querySelectorAll(".candidate-shell").forEach(shell => {
+      shell.querySelector(".candidate").addEventListener("click", event => {
+        if (event.target.closest(".like-button")) return;
+        selectPlace(shell.dataset.place, true);
+      });
+      shell.querySelector(".candidate").addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectPlace(shell.dataset.place, true);
+        }
+      });
+    });
+
+    document.querySelectorAll(".like-button").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const liked = button.classList.toggle("liked");
+        const count = button.querySelector("b");
+        count.textContent = Number(count.textContent) + (liked ? 1 : -1);
+        button.querySelector("span").textContent = liked ? "♥" : "♡";
+        showToast(liked ? "이 장소에 좋아요를 남겼어요." : "좋아요를 취소했어요.");
+      });
+    });
+
+    document.querySelector(".drawer-close").addEventListener("click", closeDrawer);
+    document.querySelector(".current-choice").addEventListener("click", () => {
+      const name = placeData[activePlace].name;
+      document.querySelector("[data-selection-name]").textContent = name;
+      document.querySelector(".selection-banner").classList.add("visible");
+      closeDrawer();
+      showToast(`${name}, 지금 여기 어때요?`);
+    });
+
+    document.querySelector("[data-add-place]").addEventListener("click", event => {
+      const button = event.currentTarget;
+      if (button.dataset.added) {
+        selectPlace("new", true);
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "주변에서 장소를 찾는 중…";
+      setTimeout(() => {
+        const list = document.querySelector(".candidate-list");
+        const shell = document.createElement("div");
+        shell.className = "candidate-shell";
+        shell.dataset.place = "new";
+        shell.innerHTML = `
+          <article class="candidate" tabindex="0">
+            <div class="candidate-head">
+              <span class="place-index">04</span>
+              <div>
+                <h3>건대 작은 식탁</h3>
+                <p>음식점 · 내가 방금 추가</p>
+              </div>
+            </div>
+            <div class="candidate-meta">
+              <button class="meta-action like-button" type="button"><span>♡</span><b>0</b></button>
+              <span class="meta-action">댓글 0</span>
+            </div>
+          </article>`;
+        list.appendChild(shell);
+        shell.querySelector(".candidate").addEventListener("click", event => {
+          if (!event.target.closest(".like-button")) selectPlace("new", true);
+        });
+        shell.querySelector(".like-button").addEventListener("click", event => {
+          event.stopPropagation();
+          const like = event.currentTarget;
+          const liked = like.classList.toggle("liked");
+          like.querySelector("b").textContent = liked ? "1" : "0";
+          like.querySelector("span").textContent = liked ? "♥" : "♡";
+        });
+        document.querySelector('.map-pin[data-place="new"]').classList.add("added");
+        document.querySelector("[data-candidate-count]").textContent = "4 places";
+        button.textContent = "새 후보 상세 보기";
+        button.dataset.added = "true";
+        button.disabled = false;
+        selectPlace("new");
+        showToast("새 핀과 후보 카드가 보드에 추가됐어요.");
+      }, 1050);
+    });
+
+    document.querySelectorAll("[data-copy]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const original = button.textContent;
+        try {
+          await navigator.clipboard.writeText(button.dataset.copy === "링크" ? "https://meet.place/join/AB12CD" : "AB12CD");
+        } catch (_) {
+          // file:// 환경에서도 시각 피드백은 동일하게 제공합니다.
+        }
+        button.textContent = "복사됐어요";
+        showToast(`${button.dataset.copy}를 복사했어요.`);
+        setTimeout(() => { button.textContent = original; }, 2000);
+      });
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        toggleMenu(false);
+        closeDrawer();
+        closeInvite();
+      }
+    });
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.14 });
+
+    document.querySelectorAll(".reveal").forEach((element, index) => {
+      element.style.transitionDelay = `${Math.min(index * 70, 280)}ms`;
+      observer.observe(element);
+    });
+  </script>
+</body>
+</html>

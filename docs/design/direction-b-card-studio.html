@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>방향 B · 모임 노트 (Card Studio)</title>
+<style>
+  :root{
+    --bg:#f1efe8; --ink:#22271f; --ink-2:#5c6357; --ink-3:#9aa093;
+    --line:#e0ddd2; --card:#fff; --green:#3f7d5a; --green-soft:#e4efe6; --green-ink:#2c5a40;
+    --map-a:#e5ebe3; --amber:#c68a2e;
+    --font:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:#d5d2c8;color:var(--ink);-webkit-font-smoothing:antialiased;padding:40px 20px 80px;line-height:1.45}
+  .head{max-width:1180px;margin:0 auto 34px}
+  .head .kick{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#7c8173;font-weight:700}
+  .head h1{font-size:30px;letter-spacing:-.02em;margin:8px 0 10px;font-weight:800;color:#20261d}
+  .head p{max-width:660px;font-size:14px;color:#54594d;line-height:1.6}
+  .head .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .head .tags span{background:#fff;border:1px solid #d5d2c7;color:#484d41;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px}
+  .head .back{display:inline-block;margin-top:18px;font-size:12.5px;color:#54594d;text-decoration:none;border-bottom:1px solid #adb1a3;padding-bottom:1px}
+  .stage{max-width:1180px;margin:0 auto;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .cap{font-size:12.5px;color:#4d5246;font-weight:600;padding-left:4px}
+  .cap b{color:#20261d}
+  .phone{width:375px;height:760px;background:var(--bg);border-radius:40px;box-shadow:0 2px 0 #bcb9ae,0 22px 50px -18px rgba(0,0,0,.45);overflow:hidden;position:relative;border:1px solid #d5d2c7;display:flex;flex-direction:column}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;flex:0 0 auto}
+  .scroll{flex:1 1 auto;overflow-y:auto}
+  .bh{padding:2px 20px 0}
+  .bh h2{font-size:21px;font-weight:800;letter-spacing:-.02em}
+  .bh .sub{font-size:12px;color:var(--ink-2);margin-top:3px;display:flex;align-items:center;gap:8px}
+  .bh .avatars{display:inline-flex;margin-left:2px}
+  .bh .avatars span{width:22px;height:22px;border-radius:50%;border:2px solid var(--bg);margin-left:-7px;font-size:10px;font-weight:700;color:#fff;display:grid;place-items:center}
+  .g1{background:#3f7d5a}.g2{background:#c68a2e}.g3{background:#5b6b8c}.g4{background:#b5654a}
+  .pills{display:flex;gap:8px;margin-top:14px;padding:0 20px}
+  .pill{flex:1;background:#fff;border:1px solid var(--line);border-radius:13px;padding:10px 12px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink)}
+  .pill .em{font-size:15px}
+  .pill .code{font-family:ui-monospace,Menlo,monospace;letter-spacing:.1em}
+  .nowhere{margin:14px 20px 0;background:var(--green-soft);border:1px solid #cfe2d4;border-radius:16px;padding:14px 16px;position:relative}
+  .nowhere .k{font-size:11px;font-weight:800;color:var(--green-ink);letter-spacing:.03em;display:flex;align-items:center;gap:6px}
+  .nowhere .nm{font-size:17px;font-weight:800;margin-top:5px;color:#1f2a22}
+  .nowhere .by{font-size:11.5px;color:var(--ink-2);margin-top:5px}
+  .nowhere .chg{position:absolute;right:14px;top:14px;background:#fff;border:1px solid #cfe2d4;color:var(--green-ink);font-family:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:9px}
+  .mapstrip{margin:14px 20px 0;height:150px;border-radius:16px;overflow:hidden;position:relative;background:var(--map-a);border:1px solid var(--line)}
+  .mapstrip .road{position:absolute;background:#eef2ec}
+  .mapstrip .pin{position:absolute;transform:translate(-50%,-100%)}
+  .mapstrip .pin .dot{width:28px;height:28px;border-radius:50% 50% 50% 4px;transform:rotate(45deg);background:#fff;border:1.5px solid var(--ink);display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2)}
+  .mapstrip .pin .dot span{transform:rotate(-45deg);font-size:12px}
+  .mapstrip .pin.sel .dot{background:var(--green);border-color:var(--green);width:32px;height:32px}
+  .mapstrip .expand{position:absolute;right:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--line);font-size:11px;font-weight:700;color:var(--ink);padding:5px 10px;border-radius:9px}
+  .listhead{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 8px}
+  .listhead h3{font-size:14px;font-weight:800}
+  .listhead .sort{font-size:11.5px;color:var(--ink-2);font-weight:600}
+  .cards{padding:0 20px;display:flex;flex-direction:column;gap:10px}
+  .pcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;gap:12px;box-shadow:0 6px 16px -12px rgba(34,39,31,.4)}
+  .pcard.sel{border-color:var(--green);box-shadow:0 8px 20px -12px rgba(63,125,90,.5)}
+  .pcard .gl{flex:0 0 auto;width:44px;height:44px;border-radius:13px;background:var(--green-soft);display:grid;place-items:center;font-size:21px}
+  .pcard .b{flex:1;min-width:0}
+  .pcard .nm{font-size:15px;font-weight:800;letter-spacing:-.01em}
+  .pcard .meta{font-size:12px;color:var(--ink-2);margin-top:3px}
+  .pcard .stats{display:flex;gap:8px;margin-top:10px}
+  .pcard .stats .s{font-size:12px;font-weight:700;color:var(--ink-2);background:var(--bg);border-radius:8px;padding:4px 9px;display:inline-flex;gap:5px;align-items:center}
+  .pcard .stats .s.liked{background:#fbe7de;color:#b5654a}
+  .pcard .who{font-size:10.5px;color:var(--ink-3);margin-top:8px;font-weight:600}
+  .fab{position:sticky;bottom:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 68%,rgba(241,239,232,0));display:flex;gap:10px;margin-top:8px}
+  .fab .add{flex:1;background:var(--green);color:#fff;border:0;font-family:inherit;font-size:15px;font-weight:800;padding:15px;border-radius:16px;box-shadow:0 10px 22px -8px rgba(63,125,90,.6)}
+  .fab .ghost{flex:0 0 auto;background:#fff;border:1px solid var(--line);color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;padding:0 15px;border-radius:16px}
+  .screen{padding:6px 20px 24px}
+  .s-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:10px 0 6px}
+  .s-p{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+  .step{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-3);font-weight:700;margin:14px 0 2px}
+  .step .on{color:var(--green)}
+  .who-list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .who-row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:11px 13px}
+  .who-row .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+  .who-row .nm{font-size:13.5px;font-weight:700}
+  .who-row .st{margin-left:auto;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .who-row .st.ok{background:var(--green-soft);color:var(--green-ink)}
+  .who-row .st.no{background:#f3ecdd;color:#9a7a2c}
+  .timesel{display:flex;gap:8px;margin-top:16px}
+  .timesel b{flex:1;text-align:center;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 0;font-size:14px;font-weight:800;color:var(--ink-2)}
+  .timesel b.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .bigbtn{width:100%;border:0;font-family:inherit;border-radius:16px;padding:16px;font-size:15px;font-weight:800}
+  .bigbtn.pri{background:var(--green);color:#fff}
+  .bigbtn.sec{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .note{font-size:11.5px;color:var(--ink-3);line-height:1.6;margin-top:12px}
+  .runwrap{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 24px}
+  .spinner{width:64px;height:64px;border-radius:50%;border:5px solid var(--green-soft);border-top-color:var(--green);margin-bottom:18px}
+  .phase{font-size:11.5px;color:var(--ink-3);font-weight:700;margin-top:14px}
+  .phasebar{width:100%;height:6px;border-radius:3px;background:var(--line);margin-top:8px;overflow:hidden}
+  .phasebar i{display:block;height:100%;width:62%;background:var(--green)}
+  .anchor{display:flex;gap:12px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;margin-top:10px;align-items:center}
+  .anchor .ic{width:42px;height:42px;border-radius:12px;background:var(--green-soft);display:grid;place-items:center;font-size:19px}
+  .anchor .nm{font-size:14.5px;font-weight:800}
+  .anchor .mt{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+  .anchor .go{margin-left:auto;background:var(--green);color:#fff;border:0;font-family:inherit;font-size:12px;font-weight:700;padding:9px 12px;border-radius:10px}
+  .banner{background:var(--green-soft);border:1px solid #cfe2d4;border-radius:13px;padding:12px 14px;font-size:12px;color:var(--green-ink);line-height:1.5;margin-top:4px}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="kick">Direction B</div>
+    <h1>모임 노트 · Card Studio</h1>
+    <p>지도는 상단의 잔잔한 띠로 두고, 화면의 무게중심은 <b>후보 카드</b>에 둡니다. 세이지 그린을 협업·현재 선택에 쓰고, 좋아요·댓글 수를 알약 배지로 또렷하게 보여 큰 손가락으로도 비교가 쉽습니다. 스크랩북처럼 “같이 모으는 노트” 감정을 강조한 방향입니다.</p>
+    <div class="tags"><span>세이지 그린</span><span>카드 중심 · 지도 띠</span><span>통계 알약 배지</span><span>따뜻한 협업 톤</span></div>
+    <a class="back" href="index.html">← 방향 갤러리로</a>
+  </div>
+
+  <div class="stage">
+
+    <div class="col">
+      <div class="cap"><b>PG-05</b> 후보 장소 보드 — 핵심 화면</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">모여봐</span></div>
+        <div class="scroll">
+          <div class="bh">
+            <h2>주말 저녁 모임</h2>
+            <div class="sub">후보 5곳 · 참여자 4명 <span class="avatars"><span class="g1">지</span><span class="g2">현</span><span class="g3">민</span><span class="g4">수</span></span></div>
+          </div>
+          <div class="pills">
+            <div class="pill"><span class="em">🔗</span><span>초대 · <span class="code">A7K-92</span></span></div>
+            <div class="pill"><span class="em">📍</span><span>내 출발지 설정</span></div>
+          </div>
+          <div class="nowhere">
+            <div class="k">🟢 지금 여기 어때요?</div>
+            <div class="nm">을지로 골목집</div>
+            <div class="by">현이 3분 전에 골랐어요 · 확정 아니에요, 누구나 바꿀 수 있어요</div>
+            <button class="chg">바꾸기</button>
+          </div>
+          <div class="mapstrip">
+            <div class="road" style="left:0;top:70px;width:100%;height:12px;transform:rotate(-3deg)"></div>
+            <div class="road" style="left:120px;top:0;width:12px;height:100%"></div>
+            <div class="pin sel" style="left:150px;top:80px"><div class="dot"><span>🍜</span></div></div>
+            <div class="pin" style="left:70px;top:60px"><div class="dot"><span>🥩</span></div></div>
+            <div class="pin" style="left:250px;top:100px"><div class="dot"><span>📍</span></div></div>
+            <div class="expand">지도 크게 보기 ⤢</div>
+          </div>
+          <div class="listhead"><h3>모은 후보 5곳</h3><div class="sort">최근순 ⌄</div></div>
+          <div class="cards">
+            <div class="pcard sel">
+              <div class="gl">🍜</div>
+              <div class="b"><div class="nm">을지로 골목집</div><div class="meta">한식 · 중구 을지로12길</div>
+                <div class="stats"><span class="s liked">♥ 좋아요 3</span><span class="s">💬 댓글 5</span></div>
+                <div class="who">현이 추가 · 🟢 지금 여기</div></div>
+            </div>
+            <div class="pcard">
+              <div class="gl">🥩</div>
+              <div class="b"><div class="nm">성수 연방스테이크</div><div class="meta">양식 · 성동구 성수이로</div>
+                <div class="stats"><span class="s">♡ 좋아요 2</span><span class="s">💬 댓글 1</span></div>
+                <div class="who">지민이 추가</div></div>
+            </div>
+            <div class="pcard">
+              <div class="gl">📍</div>
+              <div class="b"><div class="nm">합정 곳간</div><div class="meta">직접 지정 · 마포구</div>
+                <div class="stats"><span class="s">♡ 좋아요 1</span><span class="s">💬 댓글 0</span></div>
+                <div class="who">수가 추가</div></div>
+            </div>
+          </div>
+          <div class="fab"><button class="add">＋ 장소 추가</button><button class="ghost">지역 찾기</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-09</b> 지역 찾기 — 준비</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">← 후보 보드</span></div>
+        <div class="scroll"><div class="screen">
+          <div class="s-title">어디서 만날지<br/>같이 찾아볼까요?</div>
+          <div class="s-p">정답을 정해주는 건 아니에요. 다들 오기 좋은 <b>탐색 시작 지점</b> 몇 곳을 추천해 드려요.</div>
+          <div class="step"><span class="on">① 출발지 확인</span> → <span>② 시간 선택</span> → <span>③ 찾기</span></div>
+          <div class="who-list">
+            <div class="who-row"><div class="av g1">지</div><div class="nm">지민</div><div class="st ok">출발지 등록됨</div></div>
+            <div class="who-row"><div class="av g2">현</div><div class="nm">현</div><div class="st ok">출발지 등록됨</div></div>
+            <div class="who-row"><div class="av g3">민</div><div class="nm">민</div><div class="st no">아직 안 함</div></div>
+            <div class="who-row"><div class="av g4">수</div><div class="nm">수</div><div class="st ok">출발지 등록됨</div></div>
+          </div>
+          <div class="note">다른 사람의 정확한 주소는 보이지 않아요. 등록 여부만 표시돼요.</div>
+          <div style="font-size:12px;font-weight:800;margin:18px 0 0">이동 시간 (참고)</div>
+          <div class="timesel"><b>30분</b><b class="on">45분</b><b>60분</b></div>
+          <button class="bigbtn pri" style="margin-top:18px">이 조건으로 지역 찾기</button>
+          <div class="note">민이 출발지를 등록하지 않아도, 등록된 사람 기준으로 찾을 수 있어요.</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-09</b> 지역 찾기 — 진행 / 결과</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">지역 찾기</span></div>
+        <div class="scroll">
+          <div class="runwrap" style="padding-bottom:14px">
+            <div class="spinner"></div>
+            <div style="font-size:15px;font-weight:800">만날 만한 지역을 찾고 있어요</div>
+            <div class="s-p" style="margin-top:4px">보통 10~20초 걸려요 · 2초마다 확인 중</div>
+            <div style="width:100%"><div class="phasebar"><i></i></div><div class="phase">3/4 · 교통 기준점 모으는 중</div></div>
+          </div>
+          <div class="screen" style="padding-top:4px">
+            <div class="banner">✅ <b>탐색 시작 지점 3곳</b>을 찾았어요. 정답이 아니라 여기부터 둘러보면 좋다는 뜻이에요.</div>
+            <div class="anchor"><div class="ic">🚉</div><div><div class="nm">왕십리역 일대</div><div class="mt">참여자 중심에서 가까움</div></div><button class="go">주변 보기</button></div>
+            <div class="anchor"><div class="ic">🚉</div><div><div class="nm">건대입구역 일대</div><div class="mt">교통 편함</div></div><button class="go">주변 보기</button></div>
+            <div class="anchor"><div class="ic">🚌</div><div><div class="nm">성수 카페거리</div><div class="mt">중심 근처</div></div><button class="go">주변 보기</button></div>
+            <div class="note">지도에서 원하는 곳을 직접 찍어 그 주변을 탐색할 수도 있어요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap"><b>PG-07</b> 장소 상세 시트 (삭제 안내 포함)</div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span style="font-size:11px">← 후보 보드</span></div>
+        <div class="scroll"><div class="screen">
+          <div class="mapstrip" style="margin:8px 0 0"><div class="road" style="left:0;top:70px;width:100%;height:12px"></div><div class="pin sel" style="left:50%;top:80px"><div class="dot"><span>🍜</span></div></div></div>
+          <div class="s-title" style="margin-top:14px">을지로 골목집</div>
+          <div class="s-p">한식 · 서울 중구 을지로12길 · 현이 추가</div>
+          <div class="timesel" style="margin-top:14px"><b class="on" style="background:#fbe7de;color:#b5654a;border-color:#fbe7de">♥ 좋아요 3</b><b>💬 댓글 5</b><b>🔗 지도</b></div>
+          <button class="bigbtn pri" style="margin-top:12px">🟢 지금 여기로 정하기</button>
+          <div class="banner" style="margin-top:14px">🗑️ 후보 삭제는 누구나 할 수 있어요. <b>지금 여기</b>로 선택된 곳을 삭제하면 선택이 자동으로 풀려요.</div>
+          <div style="font-size:12px;font-weight:800;margin:20px 0 2px">댓글 5</div>
+          <div class="who-row" style="margin-top:8px"><div class="av g2">현</div><div><div class="nm">현</div><div style="font-size:12.5px;color:#3d4237;margin-top:2px">여기 노포 감성 좋아요 👍</div></div></div>
+          <div class="who-row" style="margin-top:8px"><div class="av g1">지</div><div><div class="nm">지민</div><div style="font-size:12.5px;color:#3d4237;margin-top:2px">중간이라 좋을듯!</div></div></div>
+        </div></div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

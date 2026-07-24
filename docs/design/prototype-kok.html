@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>모여봐 · 인터랙티브 프로토타입 (KOK DNA)</title>
+<style>
+  :root{
+    --coral:#f0552d; --coral-d:#d8461f; --coral-soft:#fde7df;
+    --navy:#1e2b3c; --navy-2:#2c3c50;
+    --bg:#f4f3ef; --ink:#1b1d22; --ink-2:#6b7078; --ink-3:#a2a7ae; --line:#eceae4;
+    --card:#fff; --like:#f0552d;
+    --teal:#3fb1bd; --yellow:#f2b23e;
+    --font:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+    --r-sheet:26px; --r-card:20px; --r-btn:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:var(--font);background:#e7e4dc;color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px}
+  .toolbar{width:390px;max-width:100%;display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .toolbar .t{font-size:13px;font-weight:800;color:#33373d}
+  .toolbar .hint{font-size:11.5px;color:#7c8088;margin-left:auto}
+  .toolbar button{font-family:inherit;font-size:11.5px;font-weight:700;color:#fff;background:var(--navy);border:0;border-radius:9px;padding:7px 11px}
+
+  .phone{width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:46px;border:1px solid #cfccc3;
+    box-shadow:0 3px 0 #c7c4ba,0 30px 60px -22px rgba(0,0,0,.5);position:relative;overflow:hidden}
+  .notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#0d0f12;border-radius:0 0 18px 18px;z-index:60}
+  .sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-size:13px;font-weight:700;z-index:55;pointer-events:none}
+  .home-ind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:130px;height:5px;border-radius:3px;background:rgba(0,0,0,.25);z-index:60}
+
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;padding-top:52px}
+  .screen.active{display:flex;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .screen.slide.active{animation:slide .28s cubic-bezier(.32,.72,0,1)}
+  @keyframes slide{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+  .top{display:flex;align-items:center;gap:8px;padding:6px 18px 10px;flex:0 0 auto}
+  .top .back{width:34px;height:34px;border-radius:11px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:17px;color:var(--ink)}
+  .top .title{font-size:15px;font-weight:800;flex:1;text-align:center}
+  .top .spacer{width:34px}
+  .body{flex:1 1 auto;overflow-y:auto;padding:0 20px 26px}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;font-family:inherit;
+    font-size:15.5px;font-weight:800;border-radius:var(--r-btn);padding:16px;cursor:pointer}
+  .btn.navy{background:var(--navy);color:#fff}
+  .btn.coral{background:var(--coral);color:#fff;box-shadow:0 10px 22px -10px rgba(240,85,45,.7)}
+  .btn.line{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn:active{transform:scale(.985)}
+  .btn.sm{padding:12px;font-size:14px}
+
+  .m{display:inline-block;color:var(--coral)}
+  .m svg{display:block}
+  .m.teal{color:var(--teal)} .m.yellow{color:var(--yellow)}
+
+  #home .hero{padding:30px 20px 0;flex:1;display:flex;flex-direction:column}
+  #home .brand{font-size:12px;letter-spacing:.2em;font-weight:800;color:var(--coral);text-transform:uppercase}
+  #home h1{font-size:29px;font-weight:800;letter-spacing:-.02em;margin:12px 0 10px;line-height:1.25}
+  #home .sub{font-size:14px;color:var(--ink-2);line-height:1.6}
+  #home .mascot-wrap{display:flex;justify-content:center;margin:26px 0}
+  #home .divider{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:11.5px;font-weight:600;margin:20px 0 14px}
+  #home .divider::before,#home .divider::after{content:"";height:1px;background:var(--line);flex:1}
+  .codebox{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+  .codebox .in{flex:1;font-size:15px;font-weight:700;letter-spacing:.14em;font-family:ui-monospace,Menlo,monospace;color:var(--ink-3)}
+  .recent{margin-top:8px}
+  .recent .r{display:flex;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid var(--line);cursor:pointer}
+  .recent .r .ic{width:40px;height:40px;border-radius:12px;background:var(--coral-soft);display:grid;place-items:center;font-size:18px}
+  .recent .r .n{font-size:14px;font-weight:700}
+  .recent .r .d{font-size:11.5px;color:var(--ink-3)}
+  .recent .r .go{margin-left:auto;color:var(--ink-3)}
+
+  #join .kick{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--coral);text-transform:uppercase}
+  #join h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:10px 0 6px;line-height:1.3}
+  #join .sub{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+  #join .mascot-wrap{display:flex;justify-content:center;margin:14px 0 6px}
+  .field{margin-top:18px}
+  .field label{font-size:12.5px;font-weight:800;display:block;margin-bottom:8px}
+  .field label .opt{color:var(--ink-3);font-weight:500}
+  .inp{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:14px;padding:15px;font-size:15px;background:#fff}
+  .inp.focus{border-color:var(--coral)}
+  .inp .ph{color:var(--ink-3)}
+  .inp .val{font-weight:700}
+  .inp .clear{margin-left:auto;color:var(--ink-3);font-size:15px}
+  .cnt{font-size:11px;color:var(--ink-3);text-align:right;margin-top:6px}
+  .privacy{background:var(--coral-soft);border:1px solid #f6d3c6;border-radius:12px;padding:11px 13px;font-size:11.5px;color:#a5432a;line-height:1.5;margin-top:14px}
+
+  #board{padding-top:0}
+  .b-top{position:absolute;top:52px;left:0;right:0;z-index:30;padding:6px 16px;display:flex;align-items:center;gap:8px}
+  .b-top .name{font-size:15px;font-weight:800;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border:1px solid var(--line);border-radius:12px;padding:9px 14px;box-shadow:0 6px 16px -10px rgba(0,0,0,.3)}
+  .b-top .ppl{margin-left:auto;display:flex;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:12px;padding:5px 8px 5px 10px;align-items:center;gap:2px;box-shadow:0 6px 16px -10px rgba(0,0,0,.3)}
+  .b-top .ppl span{width:24px;height:24px;border-radius:50%;border:2px solid #fff;margin-left:-8px;font-size:10px;font-weight:800;color:#fff;display:grid;place-items:center}
+  .p1{background:var(--coral)}.p2{background:var(--teal)}.p3{background:var(--yellow)}.p4{background:#5b6b8c}
+  .selchip{position:absolute;top:100px;left:50%;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px 8px 12px;box-shadow:0 8px 20px -10px rgba(0,0,0,.35);white-space:nowrap;font-size:13px;font-weight:700}
+  .selchip .dotk{width:8px;height:8px;border-radius:50%;background:var(--coral)}
+  .selchip .lbl{color:var(--ink-3);font-weight:600;font-size:11.5px}
+  .map{position:absolute;inset:52px 0 0;background:#e4e6df;overflow:hidden}
+  .map .road{position:absolute;background:#eef0ea}
+  .map .water{position:absolute;background:#cfdbdc;opacity:.85}
+  .map .blk{position:absolute;background:#dcdfd6;border-radius:3px}
+  .pin{position:absolute;transform:translate(-50%,-100%);z-index:20}
+  .pin .cap{width:44px;height:44px;border-radius:50% 50% 50% 6px;transform:rotate(45deg);background:#fff;border:2px solid var(--ink);display:grid;place-items:center;box-shadow:0 6px 14px rgba(0,0,0,.28)}
+  .pin .cap .m{transform:rotate(-45deg)}
+  .pin.sel .cap{background:var(--coral);border-color:var(--coral);width:52px;height:52px}
+  .pin.sel .cap .m{color:#fff}
+  .pin.sel::after{content:"지금 여기";position:absolute;top:-26px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--coral);color:#fff;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px}
+  .pin.mini .cap{width:34px;height:34px}
+  .addfab{position:absolute;right:16px;z-index:35;background:var(--coral);color:#fff;border:0;font-family:inherit;font-size:13.5px;font-weight:800;padding:12px 16px;border-radius:14px;box-shadow:0 10px 22px -8px rgba(240,85,45,.7);display:flex;align-items:center;gap:6px;cursor:pointer;transition:bottom .32s cubic-bezier(.32,.72,0,1)}
+
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:40;background:#fff;border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+    box-shadow:0 -10px 30px -12px rgba(0,0,0,.25);transition:height .32s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;height:250px}
+  .sheet.expanded{height:560px}
+  .grip{width:40px;height:5px;border-radius:3px;background:#e2ded4;margin:9px auto 4px;cursor:pointer}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 10px;cursor:pointer}
+  .sheet-head h3{font-size:16px;font-weight:800}
+  .sheet-head .miss{color:var(--coral)}
+  .sheet-head .sort{font-size:12px;color:var(--ink-2);font-weight:600}
+  .sheet-body{flex:1;overflow-y:auto;padding:0 16px}
+  .share-cta{padding:12px 20px calc(16px + env(safe-area-inset-bottom))}
+  .cards{display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
+  .pcard{display:flex;gap:12px;background:#fff;border:1px solid var(--line);border-radius:var(--r-card);padding:13px;cursor:pointer;align-items:center}
+  .pcard.sel{border-color:var(--coral);background:var(--coral-soft)}
+  .pcard .thumb{width:46px;height:46px;border-radius:13px;background:var(--bg);display:grid;place-items:center;font-size:22px;flex:0 0 auto}
+  .pcard.sel .thumb{background:#fff}
+  .pcard .b{flex:1;min-width:0}
+  .pcard .nm{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px}
+  .pcard .rec{font-size:9.5px;font-weight:800;color:#fff;background:var(--coral);padding:2px 7px;border-radius:6px}
+  .pcard .meta{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+  .pcard .stat{display:flex;gap:8px;margin-top:9px}
+  .pcard .stat b{font-size:11.5px;font-weight:800;color:var(--ink-2);background:var(--bg);border-radius:8px;padding:4px 9px;display:inline-flex;gap:4px;align-items:center}
+  .pcard .stat b.liked{background:var(--coral-soft);color:var(--coral)}
+
+  .d-hero{height:180px;position:relative;background:#e4e6df;overflow:hidden;flex:0 0 auto}
+  .d-hero .road{position:absolute;background:#eef0ea}
+  .d-hero .back{position:absolute;top:8px;left:14px;z-index:5;width:36px;height:36px;border-radius:12px;background:#fff;display:grid;place-items:center;font-size:17px;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+  .d-info{padding:18px 20px 0}
+  .d-cat{font-size:12px;font-weight:800;color:var(--coral)}
+  .d-nm{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:5px 0 4px}
+  .d-ad{font-size:13px;color:var(--ink-2)}
+  .kokrow{display:flex;gap:10px;margin-top:16px}
+  .kokrow .kok{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:13px;font-family:inherit;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer}
+  .kokrow .kok.on{border-color:var(--coral);background:var(--coral);color:#fff}
+  .kokrow .kok .h{font-size:16px}
+  .kokrow .map-open{flex:0 0 auto;width:52px;border:1.5px solid var(--line);background:#fff;border-radius:14px;font-size:18px;cursor:pointer}
+  .setnow{margin-top:10px}
+  .delnote{margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:11.5px;color:var(--ink-2);line-height:1.55}
+  .cmt-h{font-size:14px;font-weight:800;margin:22px 0 6px}
+  .cmt{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .cmt .av{width:32px;height:32px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800}
+  .cmt .cn{font-size:12.5px;font-weight:800}
+  .cmt .ct{font-size:13.5px;color:#3a3d42;margin-top:2px;line-height:1.5}
+  .cmt .cd{font-size:10.5px;color:var(--ink-3);margin-top:4px}
+  .cmt-bar{position:sticky;bottom:0;background:#fff;display:flex;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+  .cmt-bar input{flex:1;border:1px solid var(--line);border-radius:999px;padding:12px 16px;font-size:13.5px;font-family:inherit;outline:none}
+  .cmt-bar input:focus{border-color:var(--coral)}
+  .cmt-bar .send{width:44px;border:0;background:var(--coral);color:#fff;border-radius:50%;font-size:17px;cursor:pointer}
+
+  .searchbar{display:flex;gap:8px;align-items:center;border:1.5px solid var(--ink);border-radius:14px;padding:13px 15px;background:#fff}
+  .searchbar .q{font-size:15px;font-weight:700}
+  .cats{display:flex;gap:6px;margin-top:14px;overflow-x:auto;padding-bottom:2px}
+  .cat{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:#fff;cursor:pointer;min-width:62px}
+  .cat .ci{font-size:19px}
+  .cat .cl{font-size:11.5px;font-weight:700;color:var(--ink-2)}
+  .cat.on{background:var(--coral-soft);border-color:var(--coral)}
+  .cat.on .cl{color:var(--coral)}
+  .reslist{margin-top:6px}
+  .res{display:flex;gap:12px;align-items:center;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .res .thumb{width:38px;height:38px;border-radius:11px;background:var(--bg);display:grid;place-items:center;font-size:17px;flex:0 0 auto}
+  .res .b{flex:1;min-width:0}
+  .res .nm{font-size:14px;font-weight:700}
+  .res .ad{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+  .res .add{flex:0 0 auto;background:var(--coral);color:#fff;border:0;font-family:inherit;font-size:12.5px;font-weight:800;padding:9px 13px;border-radius:11px;cursor:pointer}
+  .res .add.done{background:#fff;color:var(--coral);border:1px solid var(--coral)}
+  .altadd{margin-top:16px;border:1px dashed var(--line);border-radius:14px;padding:14px;font-size:12.5px;color:var(--ink-2);line-height:1.6}
+  .altadd b{color:var(--coral)}
+
+  .area-head{padding:8px 4px 0}
+  .kick2{font-size:12px;font-weight:800;color:var(--coral)}
+  .area-head h2{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:8px 0 6px;line-height:1.3}
+  .area-head p{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+  .who{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .whorow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:11px 13px}
+  .whorow .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800}
+  .whorow .nm{font-size:13.5px;font-weight:700}
+  .whorow .st{margin-left:auto;font-size:11.5px;font-weight:800;padding:4px 11px;border-radius:999px}
+  .whorow .st.ok{background:var(--coral-soft);color:var(--coral)}
+  .whorow .st.no{background:#f0efe9;color:var(--ink-3)}
+  .times{display:flex;gap:8px;margin-top:14px}
+  .times b{flex:1;text-align:center;border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px 0;font-size:14px;font-weight:800;color:var(--ink-2);cursor:pointer}
+  .times b.on{background:var(--coral);color:#fff;border-color:var(--coral)}
+  .runwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 30px}
+  .spinner{width:66px;height:66px;border-radius:50%;border:6px solid var(--coral-soft);border-top-color:var(--coral);animation:spin 1s linear infinite;margin-bottom:20px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .phasebar{width:100%;height:6px;border-radius:3px;background:var(--line);margin-top:16px;overflow:hidden}
+  .phasebar i{display:block;height:100%;width:20%;background:var(--coral);transition:width .5s ease}
+  .anchor{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:10px}
+  .anchor .ic{width:44px;height:44px;border-radius:13px;background:var(--coral-soft);display:grid;place-items:center;font-size:20px}
+  .anchor .nm{font-size:15px;font-weight:800}
+  .anchor .mt{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+  .anchor .go{margin-left:auto;background:var(--coral);color:#fff;border:0;font-family:inherit;font-size:12.5px;font-weight:800;padding:10px 13px;border-radius:11px;cursor:pointer}
+  .resbanner{background:var(--coral-soft);border:1px solid #f6d3c6;border-radius:13px;padding:12px 14px;font-size:12.5px;color:#a5432a;line-height:1.55}
+
+  .bubble{position:absolute;z-index:25;background:rgba(30,43,60,.92);color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:14px;box-shadow:0 8px 18px -8px rgba(0,0,0,.4)}
+  .bubble::after{content:"";position:absolute;bottom:-6px;left:20px;border:7px solid transparent;border-top-color:rgba(30,43,60,.92);border-bottom:0}
+
+  .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(10px);z-index:80;background:var(--navy);color:#fff;font-size:13px;font-weight:700;padding:12px 18px;border-radius:14px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;box-shadow:0 12px 28px -10px rgba(0,0,0,.5)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .bounce{animation:bounce .4s ease}
+  @keyframes bounce{0%,100%{transform:scale(1)}40%{transform:scale(1.25)}}
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="blob" viewBox="0 0 100 100">
+    <path fill="currentColor" d="M50 5c13 0 21 5 27 14 4 6 12 7 14 16 2 8-3 14-2 22 1 8 5 15-1 22-5 7-14 4-21 8-6 4-9 12-17 12s-11-8-17-12c-7-4-16-1-21-8-6-7-2-14-1-22 1-8-4-14-2-22 2-9 10-10 14-16C29 10 37 5 50 5Z"/>
+    <ellipse cx="40" cy="52" rx="4.4" ry="6" fill="#1b1d22"/><ellipse cx="60" cy="52" rx="4.4" ry="6" fill="#1b1d22"/>
+    <path d="M43 66c4 4 10 4 14 0" stroke="#1b1d22" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </symbol></svg>
+
+  <div class="toolbar">
+    <span class="t">모여봐 · 인터랙티브 프로토타입</span>
+    <span class="hint">화면을 직접 눌러보세요 →</span>
+    <button onclick="go('home')">처음으로</button>
+  </div>
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="sb"><span>9:41</span><span>📶 🔋</span></div>
+
+    <section class="screen active" id="home">
+      <div class="hero">
+        <div class="brand">모여봐 · GATHER</div>
+        <h1>가고 싶은 곳,<br/>친구들과 <b style="color:var(--coral)">콕콕</b> 모아요</h1>
+        <div class="sub">한 보드에 후보를 쌓고, 지도에서 비교하고,<br/>지금 어디가 좋은지 가볍게 골라요.</div>
+        <div class="mascot-wrap"><span class="m"><svg width="96" height="96"><use href="#blob"/></svg></span></div>
+        <button class="btn coral" onclick="go('join')">＋ 새 보드 만들기</button>
+        <div class="divider">또는 초대 코드로 입장</div>
+        <div class="codebox"><span class="in">A7K - 92</span><button class="btn navy sm" style="width:auto;padding:11px 16px" onclick="go('join')">입장</button></div>
+        <div class="divider">최근 참여한 보드</div>
+        <div class="recent">
+          <div class="r" onclick="go('board')"><div class="ic">🍜</div><div><div class="n">디프만 모각작</div><div class="d">4명 · 후보 5곳 · 방금 활동</div></div><div class="go">›</div></div>
+          <div class="r" onclick="go('board')"><div class="ic">☕</div><div><div class="n">스터디 카페 찾기</div><div class="d">3명 · 후보 2곳 · 어제</div></div><div class="go">›</div></div>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <section class="screen slide" id="join">
+      <div class="top"><div class="back" onclick="go('home')">←</div><div class="title">입장하기</div><div class="spacer"></div></div>
+      <div class="body">
+        <div class="kick">초대받음 · 디프만 모각작</div>
+        <h2>프로필을 만들고<br/>출발지를 알려주세요</h2>
+        <div class="sub">로그인은 없어요. 보드 안에서 쓸 이름만 정하면 돼요.</div>
+        <div class="mascot-wrap"><span class="m"><svg width="72" height="72"><use href="#blob"/></svg></span></div>
+        <div class="field">
+          <label>닉네임</label>
+          <div class="inp focus"><span class="val">귀여운 티나</span><span class="clear">✕</span></div>
+          <div class="cnt">6 / 20</div>
+        </div>
+        <div class="field">
+          <label>내 출발지 <span class="opt">· 지역 찾기에 쓰여요 (나중에 설정 가능)</span></label>
+          <div class="inp"><span>🔍</span><span class="ph">집·회사·역을 검색하세요</span></div>
+        </div>
+        <div class="privacy">🔒 다른 참여자에게 정확한 주소는 안 보여요. ‘등록됨’ 여부만 공유돼요.</div>
+        <div style="height:18px"></div>
+        <button class="btn coral" onclick="go('board')">이 프로필로 입장하기</button>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <section class="screen" id="board">
+      <div class="map" id="boardmap">
+        <div class="water" style="left:-40px;top:120px;width:150px;height:120px;border-radius:45%"></div>
+        <div class="road" style="left:0;top:230px;width:100%;height:16px;transform:rotate(-4deg)"></div>
+        <div class="road" style="left:140px;top:0;width:16px;height:100%;transform:rotate(6deg)"></div>
+        <div class="road" style="left:250px;top:0;width:11px;height:100%"></div>
+        <div class="road" style="left:0;top:360px;width:100%;height:11px"></div>
+        <div class="blk" style="left:60px;top:150px;width:60px;height:50px"></div>
+        <div class="blk" style="left:200px;top:280px;width:70px;height:60px"></div>
+        <div class="blk" style="left:280px;top:170px;width:60px;height:70px"></div>
+        <div class="pin sel" style="left:190px;top:230px" onclick="openDetail()"><div class="cap"><span class="m"><svg width="26" height="26"><use href="#blob"/></svg></span></div></div>
+        <div class="pin mini" style="left:95px;top:180px" onclick="openDetail()"><div class="cap"><span style="font-size:16px">🥩</span></div></div>
+        <div class="pin mini" style="left:280px;top:300px" onclick="openDetail()"><div class="cap"><span style="font-size:16px">📍</span></div></div>
+        <div class="pin mini" style="left:170px;top:330px" onclick="openDetail()"><div class="cap"><span style="font-size:16px">🍝</span></div></div>
+        <div class="pin mini" style="left:300px;top:150px" onclick="openDetail()"><div class="cap"><span style="font-size:16px">☕</span></div></div>
+      </div>
+
+      <div class="b-top">
+        <span class="name">디프만 모각작</span>
+        <span class="ppl"><span class="p1">티</span><span class="p2">현</span><span class="p3">민</span><span class="p4">수</span></span>
+      </div>
+      <div class="selchip"><span class="dotk"></span><span class="lbl">지금 여기</span> 을지로 골목집</div>
+
+      <button class="addfab" id="addfab" style="bottom:266px" onclick="go('add')">＋ 원하는 장소 추가</button>
+
+      <div class="sheet" id="sheet">
+        <div class="grip" onclick="toggleSheet()"></div>
+        <div class="sheet-head" onclick="toggleSheet()">
+          <h3>후보 5곳 <span class="miss">· 콕 대기중</span></h3>
+          <span class="sort">최근 추가순 ⌄</span>
+        </div>
+        <div class="sheet-body">
+          <div class="cards">
+            <div class="pcard sel" onclick="openDetail()">
+              <div class="thumb"><span class="m"><svg width="24" height="24"><use href="#blob"/></svg></span></div>
+              <div class="b"><div class="nm">을지로 골목집 <span class="rec">지금 여기</span></div><div class="meta">한식 · 중구 을지로12길 · 현이 추가</div>
+                <div class="stat"><b class="liked">🩷 콕 3</b><b>💬 5</b></div></div>
+            </div>
+            <div class="pcard" onclick="openDetail()">
+              <div class="thumb">🥩</div>
+              <div class="b"><div class="nm">성수 연방스테이크</div><div class="meta">양식 · 성동구 성수이로 · 티나가 추가</div>
+                <div class="stat"><b>🤍 콕 2</b><b>💬 1</b></div></div>
+            </div>
+            <div class="pcard" onclick="openDetail()">
+              <div class="thumb">📍</div>
+              <div class="b"><div class="nm">합정 곳간</div><div class="meta">직접 지정 · 마포구 · 수가 추가</div>
+                <div class="stat"><b>🤍 콕 1</b><b>💬 0</b></div></div>
+            </div>
+            <div class="pcard" onclick="openDetail()">
+              <div class="thumb">🍝</div>
+              <div class="b"><div class="nm">망원 리코타</div><div class="meta">양식 · 마포구 망원로 · 현이 추가</div>
+                <div class="stat"><b>🤍 콕 1</b><b>💬 2</b></div></div>
+            </div>
+            <div class="pcard" onclick="openDetail()">
+              <div class="thumb">☕</div>
+              <div class="b"><div class="nm">앤트러사이트 합정</div><div class="meta">카페 · 마포구 토정로 · 민이 추가</div>
+                <div class="stat"><b>🤍 콕 0</b><b>💬 0</b></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="share-cta">
+          <button class="btn navy" onclick="go('area')">🧭 어디서 만날지 지역 찾기</button>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <section class="screen slide" id="detail">
+      <div class="d-hero">
+        <div class="road" style="left:0;top:90px;width:100%;height:14px;transform:rotate(-4deg)"></div>
+        <div class="road" style="left:160px;top:0;width:13px;height:100%"></div>
+        <div class="back" onclick="go('board')">←</div>
+        <div class="pin sel" style="left:50%;top:62%"><div class="cap"><span class="m"><svg width="26" height="26"><use href="#blob"/></svg></span></div></div>
+      </div>
+      <div class="body" style="padding-top:0">
+        <div class="d-info">
+          <div class="d-cat">한식 · 현이 추가</div>
+          <div class="d-nm">을지로 골목집</div>
+          <div class="d-ad">서울 중구 을지로12길 · 노포 감성 골목 한식</div>
+          <div class="kokrow">
+            <button class="kok on" id="kokBtn" onclick="toggleKok()"><span class="h" id="kokHeart">🩷</span> <span id="kokLabel">콕 했어요</span> <span id="kokCount">3</span></button>
+            <button class="map-open" onclick="toast('카카오맵으로 열려요')" title="지도 열기">🔗</button>
+          </div>
+          <button class="btn coral setnow" onclick="setNow()">📍 여기를 ‘지금 여기’로</button>
+          <div class="delnote">🗑️ 후보 삭제는 누구나 할 수 있어요. ‘지금 여기’로 선택된 곳을 삭제하면 선택이 자동으로 풀려요.</div>
+          <div class="cmt-h">의견 <span id="cmtCount" style="color:var(--ink-3)">5</span></div>
+          <div id="cmtList">
+            <div class="cmt"><div class="av p2">현</div><div><div class="cn">현</div><div class="ct">여기 노포 감성 좋아요. 7시 예약 가능해요!</div><div class="cd">10분 전</div></div></div>
+            <div class="cmt"><div class="av p1">티</div><div><div class="cn">귀여운 티나</div><div class="ct">성수보다 여기가 중간이라 좋을듯 👍</div><div class="cd">6분 전</div></div></div>
+            <div class="cmt"><div class="av p3">민</div><div><div class="cn">민</div><div class="ct">콜! 저는 좋아요 ㅎㅎ</div><div class="cd">2분 전</div></div></div>
+          </div>
+          <div class="cmt-bar">
+            <input id="cmtInput" placeholder="의견을 남겨주세요" onkeydown="if(event.key==='Enter')sendCmt()"/>
+            <button class="send" onclick="sendCmt()">➤</button>
+          </div>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <section class="screen slide" id="add">
+      <div class="top"><div class="back" onclick="go('board')">←</div><div class="title">장소 추가</div><div class="spacer"></div></div>
+      <div class="body">
+        <div class="searchbar"><span>🔍</span><span class="q">성수 파스타</span></div>
+        <div class="cats" id="addCats">
+          <div class="cat on" onclick="pickCat(this)"><span class="ci">🍴</span><span class="cl">키워드</span></div>
+          <div class="cat" onclick="pickCat(this)"><span class="ci">🍜</span><span class="cl">음식점</span></div>
+          <div class="cat" onclick="pickCat(this)"><span class="ci">☕</span><span class="cl">카페</span></div>
+          <div class="cat" onclick="pickCat(this)"><span class="ci">🍺</span><span class="cl">술집</span></div>
+          <div class="cat" onclick="pickCat(this)"><span class="ci">🎮</span><span class="cl">놀거리</span></div>
+        </div>
+        <div class="reslist">
+          <div class="res"><div class="thumb">🥩</div><div class="b"><div class="nm">성수 연방스테이크</div><div class="ad">성동구 성수이로 24길 3</div></div><button class="add" onclick="addPlace(this)">＋ 추가</button></div>
+          <div class="res"><div class="thumb">🍝</div><div class="b"><div class="nm">파스타붐 성수점</div><div class="ad">성동구 아차산로 104</div></div><button class="add" onclick="addPlace(this)">＋ 추가</button></div>
+          <div class="res"><div class="thumb">🍝</div><div class="b"><div class="nm">오제제 파스타바</div><div class="ad">성동구 연무장길 41</div></div><button class="add" onclick="addPlace(this)">＋ 추가</button></div>
+        </div>
+        <div class="altadd">찾는 곳이 없나요?<br/><b>🔗 외부 지도 링크로 추가</b> · <b>📍 지도에서 직접 찍기</b><br/><span style="color:var(--ink-3)">추가하기 전엔 후보가 아니에요</span></div>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <section class="screen slide" id="area">
+      <div class="top"><div class="back" onclick="go('board')">←</div><div class="title">지역 찾기</div><div class="spacer"></div></div>
+      <div class="body" id="areaPrep">
+        <div class="area-head">
+          <div class="kick2">정답이 아니라, 탐색 시작 지점이에요</div>
+          <h2>어디서 만날지<br/>같이 찾아볼까요?</h2>
+          <p>다들 오기 좋은 지점 몇 곳을 콕 집어드려요. 여기부터 둘러보면 돼요.</p>
+        </div>
+        <div class="who">
+          <div class="whorow"><div class="av p1">티</div><div class="nm">귀여운 티나</div><div class="st ok">출발지 등록됨</div></div>
+          <div class="whorow"><div class="av p2">현</div><div class="nm">현</div><div class="st ok">출발지 등록됨</div></div>
+          <div class="whorow"><div class="av p3">민</div><div class="nm">민</div><div class="st no">아직 안 함</div></div>
+          <div class="whorow"><div class="av p4">수</div><div class="nm">수</div><div class="st ok">출발지 등록됨</div></div>
+        </div>
+        <div style="font-size:12.5px;font-weight:800;margin:18px 0 0">이동 시간 (참고)</div>
+        <div class="times"><b onclick="pickTime(this)">30분</b><b class="on" onclick="pickTime(this)">45분</b><b onclick="pickTime(this)">60분</b></div>
+        <div style="height:16px"></div>
+        <button class="btn coral" onclick="runArea()">이 조건으로 지역 찾기</button>
+        <p style="font-size:11.5px;color:var(--ink-3);margin-top:12px;line-height:1.6">민이 출발지를 등록하지 않아도, 등록된 사람 기준으로 찾을 수 있어요.</p>
+      </div>
+      <div class="runwrap" id="areaRun" style="display:none">
+        <div class="spinner"></div>
+        <div style="font-size:16px;font-weight:800">만날 만한 지역을 찾고 있어요</div>
+        <div style="font-size:13px;color:var(--ink-2);margin-top:5px">보통 10~20초 걸려요 · 2초마다 확인 중</div>
+        <div style="width:100%"><div class="phasebar"><i id="phaseFill"></i></div><div id="phaseTxt" style="font-size:11.5px;color:var(--ink-3);font-weight:700;margin-top:8px">1/4 · 도달 영역 계산 중</div></div>
+      </div>
+      <div class="body" id="areaResult" style="display:none">
+        <div class="area-head" style="padding-bottom:6px"><h2 style="font-size:21px">탐색 시작 지점 3곳</h2></div>
+        <div class="resbanner">✅ 정답이 아니라 <b>여기부터 둘러보면 좋다</b>는 뜻이에요. 지도에서 직접 찍어 탐색할 수도 있어요.</div>
+        <div class="anchor"><div class="ic">🚉</div><div><div class="nm">왕십리역 일대</div><div class="mt">참여자 중심에서 가까움</div></div><button class="go" onclick="go('nearby')">주변 보기</button></div>
+        <div class="anchor"><div class="ic">🚉</div><div><div class="nm">건대입구역 일대</div><div class="mt">교통 편함</div></div><button class="go" onclick="go('nearby')">주변 보기</button></div>
+        <div class="anchor"><div class="ic">🚌</div><div><div class="nm">성수 카페거리</div><div class="mt">중심 근처</div></div><button class="go" onclick="go('nearby')">주변 보기</button></div>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <section class="screen slide" id="nearby">
+      <div class="map" style="inset:52px 0 auto 0;height:330px">
+        <div class="road" style="left:0;top:150px;width:100%;height:14px;transform:rotate(-3deg)"></div>
+        <div class="road" style="left:170px;top:0;width:13px;height:100%"></div>
+        <div class="blk" style="left:70px;top:80px;width:60px;height:50px"></div>
+        <div class="blk" style="left:230px;top:180px;width:70px;height:55px"></div>
+        <div class="pin sel" style="left:190px;top:170px"><div class="cap"><span class="m"><svg width="26" height="26"><use href="#blob"/></svg></span></div></div>
+        <div class="back" style="position:absolute;top:8px;left:14px;z-index:5;width:36px;height:36px;border-radius:12px;background:#fff;display:grid;place-items:center;font-size:17px;box-shadow:0 4px 10px rgba(0,0,0,.15)" onclick="go('area')">←</div>
+        <div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:800;box-shadow:0 6px 16px -10px rgba(0,0,0,.3)">📍 왕십리역 둘러보기</div>
+        <div class="bubble" style="left:20px;top:210px">나는 신사 너무 멀어 ㅜㅜ</div>
+        <div class="bubble" style="right:16px;top:250px">라멘 유명한 데 있던데</div>
+      </div>
+      <div class="sheet" style="height:410px;bottom:0">
+        <div class="grip"></div>
+        <div class="sheet-body" style="padding:4px 16px">
+          <div class="cats">
+            <div class="cat" onclick="pickCat(this)"><span class="ci">🎮</span><span class="cl">액티비티</span></div>
+            <div class="cat on" onclick="pickCat(this)"><span class="ci">🍴</span><span class="cl">음식점</span></div>
+            <div class="cat" onclick="pickCat(this)"><span class="ci">☕</span><span class="cl">카페</span></div>
+            <div class="cat" onclick="pickCat(this)"><span class="ci">🍺</span><span class="cl">술집</span></div>
+            <div class="cat" onclick="pickCat(this)"><span class="ci">🌲</span><span class="cl">자연</span></div>
+          </div>
+          <div style="font-size:11.5px;color:var(--ink-3);margin:12px 2px 2px;font-weight:600">추가하기 전엔 후보가 아니에요</div>
+          <div class="reslist">
+            <div class="res"><div class="thumb">🍜</div><div class="b"><div class="nm">왕십리 곱창골목</div><div class="ad">성동구 왕십리로 88</div></div><button class="add" onclick="addPlace(this)">＋ 추가</button></div>
+            <div class="res"><div class="thumb">🍲</div><div class="b"><div class="nm">한양식당</div><div class="ad">성동구 행당로 12</div></div><button class="add" onclick="addPlace(this)">＋ 추가</button></div>
+            <div class="res"><div class="thumb">🥘</div><div class="b"><div class="nm">엄마손칼국수</div><div class="ad">성동구 무학로 5</div></div><button class="add" onclick="addPlace(this)">＋ 추가</button></div>
+          </div>
+        </div>
+        <div class="cmt-bar" style="padding:12px 16px;border-top:1px solid var(--line)">
+          <input placeholder="의견을 남겨주세요" onkeydown="if(event.key==='Enter'){toast('의견을 남겼어요');this.value=''}"/>
+          <button class="send" onclick="toast('의견을 남겼어요')">➤</button>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </section>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+<script>
+  function go(id){
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    var el=document.getElementById(id);
+    el.classList.add('active');
+    el.scrollTop=0;
+    var b=el.querySelector('.body'); if(b) b.scrollTop=0;
+    if(id==='area') resetArea();
+  }
+  function openDetail(){ go('detail'); }
+
+  function toggleSheet(){
+    var sh=document.getElementById('sheet');
+    var fab=document.getElementById('addfab');
+    var open=sh.classList.toggle('expanded');
+    fab.style.bottom=(open?576:266)+'px';
+  }
+
+  var koked=true, kokN=3;
+  function toggleKok(){
+    var btn=document.getElementById('kokBtn');
+    koked=!koked;
+    kokN+=koked?1:-1;
+    btn.classList.toggle('on',koked);
+    document.getElementById('kokHeart').textContent=koked?'🩷':'🤍';
+    document.getElementById('kokLabel').textContent=koked?'콕 했어요':'콕 하기';
+    document.getElementById('kokCount').textContent=kokN;
+    var h=document.getElementById('kokHeart'); h.classList.remove('bounce'); void h.offsetWidth; h.classList.add('bounce');
+    if(koked) toast('마음에 콕! 찍었어요');
+  }
+  function setNow(){ toast('‘지금 여기’로 바꿨어요 · 언제든 변경 가능'); setTimeout(function(){go('board');},700); }
+
+  function sendCmt(){
+    var inp=document.getElementById('cmtInput'); var v=inp.value.trim(); if(!v) return;
+    var list=document.getElementById('cmtList');
+    var d=document.createElement('div'); d.className='cmt';
+    d.innerHTML='<div class="av p1">티</div><div><div class="cn">귀여운 티나</div><div class="ct"></div><div class="cd">방금</div></div>';
+    d.querySelector('.ct').textContent=v;
+    list.appendChild(d); inp.value='';
+    var c=document.getElementById('cmtCount'); c.textContent=(+c.textContent)+1;
+    d.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  function pickCat(el){ var p=el.parentNode; p.querySelectorAll('.cat').forEach(function(c){c.classList.remove('on');}); el.classList.add('on'); }
+  function addPlace(btn){ btn.classList.add('done'); btn.textContent='✓ 추가됨'; btn.disabled=true; toast('후보 보드에 추가했어요'); }
+  function pickTime(el){ el.parentNode.querySelectorAll('b').forEach(function(b){b.classList.remove('on');}); el.classList.add('on'); }
+
+  var phaseTimer;
+  function resetArea(){
+    document.getElementById('areaPrep').style.display='';
+    document.getElementById('areaRun').style.display='none';
+    document.getElementById('areaResult').style.display='none';
+  }
+  function runArea(){
+    document.getElementById('areaPrep').style.display='none';
+    document.getElementById('areaResult').style.display='none';
+    document.getElementById('areaRun').style.display='flex';
+    var phases=['1/4 · 도달 영역 계산 중','2/4 · 공통 영역 살펴보는 중','3/4 · 교통 기준점 모으는 중','4/4 · 마무리 중'];
+    var i=0; var fill=document.getElementById('phaseFill'); var txt=document.getElementById('phaseTxt');
+    fill.style.width='20%'; txt.textContent=phases[0];
+    clearInterval(phaseTimer);
+    phaseTimer=setInterval(function(){
+      i++;
+      if(i>=phases.length){ clearInterval(phaseTimer);
+        document.getElementById('areaRun').style.display='none';
+        document.getElementById('areaResult').style.display='';
+        return; }
+      fill.style.width=((i+1)*25)+'%'; txt.textContent=phases[i];
+    },600);
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},1600);
+  }
+</script>
+</body>
+</html>

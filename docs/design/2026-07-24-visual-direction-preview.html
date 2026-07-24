@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>후보 장소 보드 시각 방향 비교</title>
+    <style>
+      :root {
+        --ink: #202124;
+        --muted: #6b7280;
+        --line: #d7dde5;
+        --paper: #f6f8fb;
+        --panel: #ffffff;
+        --green: #2f9e73;
+        --mint: #dff6ec;
+        --yellow: #ffe7a6;
+        --coral: #f9735b;
+        --blue: #4c7df0;
+        --shadow: 0 14px 40px rgba(31, 41, 55, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+          sans-serif;
+        letter-spacing: 0;
+      }
+
+      main {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 28px 18px 42px;
+      }
+
+      header {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 22px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .note {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px 16px;
+        color: #394150;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(260px, 1fr));
+        gap: 18px;
+        align-items: start;
+      }
+
+      .direction {
+        display: grid;
+        gap: 12px;
+      }
+
+      .direction h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .tagline {
+        min-height: 46px;
+        font-size: 14px;
+      }
+
+      .phone {
+        width: 100%;
+        max-width: 360px;
+        min-height: 720px;
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid #cbd3df;
+        border-radius: 28px;
+        background: #eef2f7;
+        box-shadow: var(--shadow);
+        position: relative;
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 36px;
+        padding: 0 22px;
+        font-size: 12px;
+        color: #313743;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .screen {
+        height: 684px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .topbar {
+        position: absolute;
+        z-index: 5;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .topline {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .pill,
+      .icon,
+      .button {
+        border: 1px solid rgba(26, 33, 45, 0.1);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 8px 22px rgba(17, 24, 39, 0.1);
+      }
+
+      .pill {
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #313743;
+      }
+
+      .icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        border-radius: 999px;
+        padding: 0 14px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .button.primary {
+        border: 0;
+        color: #fff;
+        background: var(--green);
+      }
+
+      .map {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(28deg, transparent 48%, rgba(255,255,255,.55) 49%, rgba(255,255,255,.55) 51%, transparent 52%) 0 0 / 72px 72px,
+          linear-gradient(118deg, transparent 48%, rgba(255,255,255,.62) 49%, rgba(255,255,255,.62) 51%, transparent 52%) 0 0 / 88px 88px,
+          #dceadf;
+      }
+
+      .pin {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border: 3px solid #fff;
+        border-radius: 50% 50% 50% 8px;
+        background: var(--coral);
+        transform: rotate(-45deg);
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.2);
+      }
+
+      .pin::after {
+        content: "";
+        position: absolute;
+        inset: 6px;
+        border-radius: 999px;
+        background: #fff;
+      }
+
+      .pin.selected {
+        width: 36px;
+        height: 36px;
+        background: var(--green);
+      }
+
+      .sheet {
+        position: absolute;
+        z-index: 8;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        gap: 10px;
+        border-radius: 24px 24px 0 0;
+        background: rgba(255, 255, 255, 0.97);
+        padding: 10px 14px 16px;
+        box-shadow: 0 -16px 36px rgba(17, 24, 39, 0.16);
+      }
+
+      .handle {
+        width: 42px;
+        height: 5px;
+        margin: 0 auto 2px;
+        border-radius: 999px;
+        background: #c8d0db;
+      }
+
+      .card {
+        display: grid;
+        gap: 7px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+      }
+
+      .card.selected {
+        border-color: var(--green);
+        background: var(--mint);
+      }
+
+      .card-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .choice {
+        border-radius: 8px;
+        background: #fff8e2;
+        padding: 10px;
+        font-size: 13px;
+        color: #4a3a12;
+      }
+
+      .empty {
+        display: grid;
+        gap: 10px;
+        place-items: center;
+        min-height: 210px;
+        text-align: center;
+        border: 1px dashed #bcc6d4;
+        border-radius: 8px;
+        padding: 18px;
+        background: #fbfdff;
+      }
+
+      .mini-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: #313743;
+      }
+
+      .studio .screen {
+        background: #fffaf3;
+      }
+
+      .studio .map {
+        inset: 86px 14px auto;
+        height: 156px;
+        border: 1px solid #eadfcb;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .studio .sheet {
+        top: 260px;
+        bottom: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: #fffaf3;
+      }
+
+      .studio .card {
+        background: #fff;
+        border-color: #eadfcb;
+      }
+
+      .dual .screen {
+        background: #f8fafc;
+      }
+
+      .tabs {
+        position: absolute;
+        z-index: 6;
+        top: 88px;
+        left: 14px;
+        right: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid #d4dbe6;
+        border-radius: 999px;
+        background: #fff;
+        padding: 3px;
+      }
+
+      .tab {
+        border-radius: 999px;
+        padding: 9px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .tab.active {
+        background: #1f2937;
+        color: #fff;
+      }
+
+      .dual .map {
+        top: 134px;
+        bottom: auto;
+        height: 242px;
+      }
+
+      .dual .sheet {
+        top: 376px;
+        bottom: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .combo .sheet {
+        background: #fffdf8;
+      }
+
+      .combo .card {
+        border-color: #ebdfca;
+      }
+
+      .combo .card.selected {
+        background: #ecf8ef;
+      }
+
+      .fab {
+        position: absolute;
+        right: 16px;
+        bottom: 216px;
+        z-index: 10;
+      }
+
+      .studio .fab,
+      .dual .fab {
+        bottom: 20px;
+      }
+
+      .criteria {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .criteria span {
+        border: 1px solid #d7dde5;
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px 6px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .criteria span:first-child {
+        border-color: var(--green);
+        background: var(--mint);
+      }
+
+      .summary {
+        display: grid;
+        gap: 8px;
+        border: 1px solid #d7dde5;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+      }
+
+      .review {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 14px;
+      }
+
+      .review strong {
+        font-size: 14px;
+      }
+
+      .review ul {
+        margin: 0;
+        padding-left: 18px;
+        color: #4b5563;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 1180px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(260px, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          padding: 18px 12px 28px;
+        }
+
+        h1 {
+          font-size: 23px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>후보 장소 보드 시각 방향 임시 비교</h1>
+        <p>
+          같은 약속 보드 데이터를 네 구조에 넣어 비교합니다. 충실도는 낮게 유지했고,
+          핵심은 지도와 후보 카드가 얼마나 자연스럽게 연결되는지 보는 것입니다.
+        </p>
+        <div class="note">
+          권고안은 <strong>맵 캔버스 구조 + 따뜻한 카드 스타일</strong>입니다.
+          아래 첫 번째 화면이 그 조합입니다.
+        </div>
+      </header>
+
+      <section class="grid" aria-label="시각 방향 비교">
+        <article class="direction combo">
+          <h2>1. 권고 조합</h2>
+          <p class="tagline">지도와 후보 바텀시트는 한 화면에 두고, 카드 톤은 조금 더 따뜻하게 둡니다.</p>
+          <div class="phone">
+            <div class="status"><span>9:41</span><span>LTE 82%</span></div>
+            <div class="screen">
+              <div class="map"></div>
+              <div class="topbar">
+                <div class="topline">
+                  <span class="pill">시흥 금요일 저녁</span>
+                  <span class="icon" aria-label="참여 코드">↗</span>
+                </div>
+                <div class="choice">지금 여기 어때요? 서연님이 고른 월곶 브루어리</div>
+              </div>
+              <i class="pin selected" style="left: 54%; top: 32%"></i>
+              <i class="pin" style="left: 32%; top: 42%"></i>
+              <i class="pin" style="left: 68%; top: 47%"></i>
+              <span class="button primary fab">+ 장소 추가</span>
+              <div class="sheet">
+                <div class="handle"></div>
+                <div class="mini-title">후보 3곳 · 참여 5명</div>
+                <div class="card selected">
+                  <div class="card-title"><span>월곶 브루어리</span><span>♡ 4</span></div>
+                  <div class="meta"><span>펍</span><span>민지 제안</span><span>댓글 6</span></div>
+                </div>
+                <div class="card">
+                  <div class="card-title"><span>배곧 파스타룸</span><span>♡ 3</span></div>
+                  <div class="meta"><span>양식</span><span>도윤 제안</span><span>댓글 2</span></div>
+                </div>
+                <span class="button">지역 먼저 찾아보기</span>
+              </div>
+            </div>
+          </div>
+          <div class="review">
+            <strong>검수 포인트</strong>
+            <ul>
+              <li>핀 선택과 카드 선택의 대응이 가장 빠르게 읽힙니다.</li>
+              <li>바텀시트가 협업 기록을 담아 지도 앱보다 보드처럼 보입니다.</li>
+              <li>제스처와 시트 높이 상태 정의가 구현 핵심 리스크입니다.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="direction canvas">
+          <h2>2. 맵 캔버스 단독</h2>
+          <p class="tagline">지도를 주 무대로 두고, 후보 목록은 지도 위에 얹힌 조작 패널처럼 둡니다.</p>
+          <div class="phone">
+            <div class="status"><span>9:41</span><span>LTE 82%</span></div>
+            <div class="screen">
+              <div class="map"></div>
+              <div class="topbar">
+                <div class="topline">
+                  <span class="pill">시흥 금요일 저녁</span>
+                  <span class="icon">↗</span>
+                </div>
+                <div class="choice">지금 여기 어때요? 월곶 브루어리</div>
+              </div>
+              <i class="pin selected" style="left: 52%; top: 36%"></i>
+              <i class="pin" style="left: 27%; top: 48%"></i>
+              <i class="pin" style="left: 71%; top: 52%"></i>
+              <span class="button primary fab">+ 장소 추가</span>
+              <div class="sheet">
+                <div class="handle"></div>
+                <div class="mini-title">지도에서 고른 후보</div>
+                <div class="card selected">
+                  <div class="card-title"><span>월곶 브루어리</span><span>♡ 4</span></div>
+                  <div class="meta"><span>펍</span><span>댓글 6</span><span>외부 링크</span></div>
+                </div>
+                <div class="card">
+                  <div class="card-title"><span>배곧 파스타룸</span><span>♡ 3</span></div>
+                  <div class="meta"><span>양식</span><span>댓글 2</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="review">
+            <strong>검수 포인트</strong>
+            <ul>
+              <li>지도 중심 요구와 가장 잘 맞습니다.</li>
+              <li>장소가 많아질수록 화면이 지도 서비스처럼 딱딱해질 수 있습니다.</li>
+              <li>빈 화면의 친근함과 댓글 맥락이 약해질 수 있습니다.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="direction studio">
+          <h2>3. 카드 스튜디오</h2>
+          <p class="tagline">친구들이 올린 후보 카드와 반응을 먼저 보여주고, 지도는 확인용으로 둡니다.</p>
+          <div class="phone">
+            <div class="status"><span>9:41</span><span>LTE 82%</span></div>
+            <div class="screen">
+              <div class="topbar">
+                <div class="topline">
+                  <span class="pill">시흥 금요일 저녁</span>
+                  <span class="icon">↗</span>
+                </div>
+                <div class="choice">지금 여기 어때요? 가볍게 바꿀 수 있어요</div>
+              </div>
+              <div class="map">
+                <i class="pin selected" style="left: 47%; top: 34%"></i>
+                <i class="pin" style="left: 30%; top: 54%"></i>
+                <i class="pin" style="left: 68%; top: 48%"></i>
+              </div>
+              <div class="sheet">
+                <div class="mini-title">후보 카드</div>
+                <div class="card selected">
+                  <div class="card-title"><span>월곶 브루어리</span><span>♡ 4</span></div>
+                  <div class="meta"><span>“야외 자리 좋아 보여요”</span><span>댓글 6</span></div>
+                </div>
+                <div class="card">
+                  <div class="card-title"><span>배곧 파스타룸</span><span>♡ 3</span></div>
+                  <div class="meta"><span>“역에서 걸을 만해요”</span><span>댓글 2</span></div>
+                </div>
+                <div class="empty">
+                  <strong>더 보고 싶은 곳이 있나요?</strong>
+                  <span class="button primary">+ 장소 추가</span>
+                  <span class="button">지역 먼저 찾아보기</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="review">
+            <strong>검수 포인트</strong>
+            <ul>
+              <li>좋아요와 댓글의 협업 분위기는 가장 강합니다.</li>
+              <li>핀과 카드의 즉시 대응은 상대적으로 약합니다.</li>
+              <li>지도 중심 제품으로 인식되기 어렵다는 위험이 있습니다.</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="direction dual">
+          <h2>4. 듀얼 윈도우</h2>
+          <p class="tagline">지도와 카드를 명확히 분리합니다. 모바일은 탭, 데스크톱은 50:50 패널입니다.</p>
+          <div class="phone">
+            <div class="status"><span>9:41</span><span>LTE 82%</span></div>
+            <div class="screen">
+              <div class="topbar">
+                <div class="topline">
+                  <span class="pill">시흥 금요일 저녁</span>
+                  <span class="icon">↗</span>
+                </div>
+              </div>
+              <div class="tabs">
+                <span class="tab active">지도</span>
+                <span class="tab">후보</span>
+              </div>
+              <div class="map">
+                <i class="pin selected" style="left: 51%; top: 34%"></i>
+                <i class="pin" style="left: 29%; top: 52%"></i>
+                <i class="pin" style="left: 70%; top: 48%"></i>
+              </div>
+              <div class="sheet">
+                <div class="choice">지금 여기 어때요? 월곶 브루어리</div>
+                <div class="summary">
+                  <div class="mini-title">선택 후보 요약</div>
+                  <div class="meta"><span>♡ 4</span><span>댓글 6</span><span>민지 제안</span></div>
+                </div>
+                <div class="criteria">
+                  <span>30분</span>
+                  <span>45분</span>
+                  <span>60분</span>
+                </div>
+                <span class="button primary">+ 장소 추가</span>
+              </div>
+            </div>
+          </div>
+          <div class="review">
+            <strong>검수 포인트</strong>
+            <ul>
+              <li>구조가 분명하고 데스크톱 확장이 쉽습니다.</li>
+              <li>모바일에서 지도와 후보를 오가야 해 비교 흐름이 끊깁니다.</li>
+              <li>협업 보드보다 관리 도구처럼 느껴질 수 있습니다.</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
