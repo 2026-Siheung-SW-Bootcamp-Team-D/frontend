@@ -1,12 +1,24 @@
 @import 'tailwindcss';
 
-/*
- * 와이어프레임 퍼블리싱용 최소 전역 스타일.
- *
- * Vite 스타터 템플릿의 스타일(`#root` 고정 폭 1126px, `h1` 56px, `:root` 18px 등)은
- * 화면 레이아웃과 충돌하므로 제거했다. 테마 확장이 필요하면 Tailwind v4 규칙에 따라
- * 이 파일에 `@theme` 블록을 추가한다(`tailwind.config.js`는 v4에서 동작하지 않는다).
- */
+@theme {
+  --color-coral: #f0552d;
+  --color-coral-d: #d8461f;
+  --color-coral-soft: #fde7df;
+  --color-navy: #1e2b3c;
+  --color-navy-2: #2c3c50;
+  --color-bg: #f4f3ef;
+  --color-ink: #1b1d22;
+  --color-ink-2: #6b7078;
+  --color-ink-3: #a2a7ae;
+  --color-line: #eceae4;
+  --color-teal: #3fb1bd;
+  --color-yellow: #f2b23e;
+
+  --radius-sheet: 26px;
+  --radius-card: 20px;
+  --radius-btn: 16px;
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+}
 
 :root {
   color-scheme: light;
@@ -14,14 +26,19 @@
 
 body {
   margin: 0;
-  background: #f1f2f4;
-  color: #1f2124;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Apple SD Gothic Neo',
-    'Malgun Gothic',
-    sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.45;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
 }
