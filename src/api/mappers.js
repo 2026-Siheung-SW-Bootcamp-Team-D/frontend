@@ -112,3 +112,24 @@ export function mapAddressCandidate(value) {
     lon: number(value?.location?.lon),
   };
 }
+
+export function mapAreaSearchJob(value) {
+  const anchors = Array.isArray(value?.result?.anchors) ? value.result.anchors : [];
+  return {
+    job: {
+      id: text(value?.job?.jobId),
+      status: text(value?.job?.status),
+      durationMin: number(value?.job?.durationMin),
+      errorCode: text(value?.job?.errorCode) || null,
+    },
+    anchors: anchors.map((anchor) => ({
+      id: text(anchor?.anchorId),
+      name: text(anchor?.name, "탐색 기준점"),
+      category: text(anchor?.category, "장소"),
+      roadAddress: text(anchor?.roadAddress),
+      lat: number(anchor?.location?.lat),
+      lon: number(anchor?.location?.lon),
+      rank: number(anchor?.rank),
+    })).filter((anchor) => anchor.lat !== null && anchor.lon !== null),
+  };
+}

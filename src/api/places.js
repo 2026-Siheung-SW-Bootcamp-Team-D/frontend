@@ -49,6 +49,13 @@ export async function searchPlaces(boardId, query, options = {}, { signal } = {}
   return (response.data?.items ?? []).map(mapSearchCandidate);
 }
 
+export async function searchNearbyPlaces(boardId, { lat, lon, q, category, radius = 1000 }, { signal } = {}) {
+  const response = await getApiClient().get(pathWithQuery(`/boards/${encodeURIComponent(boardId)}/search/nearby-places`, {
+    lat, lon, q, category, radius,
+  }), boardRequestConfig(boardId, signal));
+  return (response.data?.items ?? []).map(mapSearchCandidate);
+}
+
 export async function searchAddresses(boardId, query, { signal } = {}) {
   const response = await getApiClient().get(pathWithQuery(`/boards/${encodeURIComponent(boardId)}/search/addresses`, { q: query }), boardRequestConfig(boardId, signal));
   return (response.data?.items ?? []).map(mapAddressCandidate);

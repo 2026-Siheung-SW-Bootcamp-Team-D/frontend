@@ -16,7 +16,7 @@ import { ServerBoardProvider } from "./store/ServerBoardProvider";
 
 function AppContent({ route }) {
   const { isActiveBoardMissing } = useContext(BoardContext);
-  const isServerBoardRoute = ["board", "place-detail", "add-place"].includes(route.route);
+  const isServerBoardRoute = ["board", "place-detail", "add-place", "area-search", "nearby"].includes(route.route);
   const isBoardScopedRoute = [
     "board",
     "place-detail",
@@ -58,6 +58,8 @@ function AppContent({ route }) {
       <NearbyPage
         key={`nearby-${route.params.boardId}`}
         boardId={route.params.boardId}
+        initialLat={route.params.lat}
+        initialLon={route.params.lon}
       />
     ),
     profile: (

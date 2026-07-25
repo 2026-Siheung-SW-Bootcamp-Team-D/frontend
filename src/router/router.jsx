@@ -12,7 +12,9 @@ export function useHashRouter() {
 
   // 경로 파싱: /boards/:boardId/places/:placeId -> route params
   const parseRoute = (path) => {
-    const pathParts = path.split("/").filter(Boolean);
+    const [pathname, queryString = ""] = path.split("?", 2);
+    const pathParts = pathname.split("/").filter(Boolean);
+    const query = new URLSearchParams(queryString);
 
     // 홈
     if (!pathParts.length) return { route: "home", params: {} };
@@ -68,7 +70,7 @@ export function useHashRouter() {
       pathParts[1] &&
       pathParts[2] === "nearby"
     ) {
-      return { route: "nearby", params: { boardId: pathParts[1] } };
+      return { route: "nearby", params: { boardId: pathParts[1], lat: query.get("lat"), lon: query.get("lon") } };
     }
 
     // #/boards/:boardId (보드 메인)
