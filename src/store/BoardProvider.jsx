@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { INITIAL_STATE } from "../data/mock.js";
 import { BoardContext } from "./BoardContext";
 
@@ -39,9 +39,26 @@ function reducer(state, action) {
   return state;
 }
 
-export function BoardProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, initialState); const board = state.boards[state.currentBoardId]; const places = state.placesByBoard[board.id] || [];
+export function BoardProvider({ activeBoardId, children }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const requestedBoard = activeBoardId
+    ? state.boards[activeBoardId]
+    : state.boards[state.currentBoardId];
+  const isActiveBoardMissing = Boolean(activeBoardId) && !requestedBoard;
+  const activeBoard = requestedBoard || state.boards[state.currentBoardId];
+  const places = state.placesByBoard[activeBoard.id] || [];
+
+  useEffect(() => {
+    if (
+      activeBoardId &&
+      state.boards[activeBoardId] &&
+      state.currentBoardId !== activeBoardId
+    ) {
+      dispatch({ type: "OPEN", boardId: activeBoardId });
+    }
+  }, [activeBoardId, state.boards, state.currentBoardId]);
+
   const inviteBoard = (code) => Object.values(state.boards).find((item) => item.inviteCode === code.trim().toUpperCase());
-  const value = { ...state, board, places, participants: state.participantsByBoard[board.id] || [], areaAnchors: INITIAL_STATE.areaAnchors, recentMeetings: state.recentBoardIds.map((id) => state.boards[id]), isInviteValid: (code) => Boolean(inviteBoard(code)), getInvite: (code) => { const target = inviteBoard(code); return target && { boardId: target.id, status: "OPEN" }; }, getBoard: (id) => state.boards[id], openBoard: (boardId) => dispatch({ type: "OPEN", boardId }), createBoard: (data) => dispatch({ type: "CREATE", data }), joinBoard: ({ code, nickname }) => dispatch({ type: "JOIN", code: code.trim().toUpperCase(), nickname }), updateProfile: (data) => dispatch({ type: "PROFILE", data }), addPlace: (data) => { const duplicate = places.some((place) => place.name === data.name && place.address === data.address); if (!duplicate) dispatch({ type: "ADD", data }); return !duplicate; }, toggleLike: (id) => dispatch({ type: "LIKE", id }), setSelectedPlace: (id) => dispatch({ type: "SELECT", id }), clearSelectedPlace: () => dispatch({ type: "SELECT", id: null }), removePlace: (id) => dispatch({ type: "REMOVE", id }), addComment: (placeId, text) => dispatch({ type: "COMMENT", placeId, text }), deleteComment: (placeId, commentId) => dispatch({ type: "DELETE_COMMENT", placeId, commentId }) };
+  const value = { ...state, board: requestedBoard, places, participants: state.participantsByBoard[activeBoard.id] || [], isActiveBoardMissing, areaAnchors: INITIAL_STATE.areaAnchors, recentMeetings: state.recentBoardIds.map((id) => state.boards[id]), isInviteValid: (code) => Boolean(inviteBoard(code)), getInvite: (code) => { const target = inviteBoard(code); return target && { boardId: target.id, status: "OPEN" }; }, getBoard: (id) => state.boards[id], openBoard: (boardId) => dispatch({ type: "OPEN", boardId }), createBoard: (data) => dispatch({ type: "CREATE", data }), joinBoard: ({ code, nickname }) => dispatch({ type: "JOIN", code: code.trim().toUpperCase(), nickname }), updateProfile: (data) => dispatch({ type: "PROFILE", data }), addPlace: (data) => { const duplicate = places.some((place) => place.name === data.name && place.address === data.address); if (!duplicate) dispatch({ type: "ADD", data }); return !duplicate; }, toggleLike: (id) => dispatch({ type: "LIKE", id }), setSelectedPlace: (id) => dispatch({ type: "SELECT", id }), clearSelectedPlace: () => dispatch({ type: "SELECT", id: null }), removePlace: (id) => dispatch({ type: "REMOVE", id }), addComment: (placeId, text) => dispatch({ type: "COMMENT", placeId, text }), deleteComment: (placeId, commentId) => dispatch({ type: "DELETE_COMMENT", placeId, commentId }) };
   return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>;
 }
