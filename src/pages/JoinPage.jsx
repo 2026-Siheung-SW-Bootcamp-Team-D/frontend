@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getInvitationPreview, joinBoard } from "../api/boards";
 import { ApiError } from "../api/errors";
 import { Button } from "../components/UI";
@@ -20,6 +20,9 @@ export function JoinPage({ code }) {
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
+  const joinControllerRef = useRef(null);
+
+  useEffect(() => () => joinControllerRef.current?.abort(), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,15 +46,21 @@ export function JoinPage({ code }) {
   async function submit() {
     const value = nickname.trim();
     if (value.length < 1 || value.length > 20) return setError("닉네임은 1~20자로 입력해 주세요.");
+    const controller = new AbortController();
+    joinControllerRef.current = controller;
     setJoining(true);
     setError("");
     try {
-      const response = await joinBoard(code, { nickname: value });
+      const response = await joinBoard(code, { nickname: value }, { signal: controller.signal });
+      if (controller.signal.aborted || joinControllerRef.current !== controller) return;
       navigate(`/boards/${response.boardId}/profile`);
     } catch (requestError) {
-      if (!requestError?.isCanceled) setError(previewMessage(requestError));
+      if (!controller.signal.aborted && !requestError?.isCanceled) setError(previewMessage(requestError));
     } finally {
-      setJoining(false);
+      if (!controller.signal.aborted && joinControllerRef.current === controller) {
+        joinControllerRef.current = null;
+        setJoining(false);
+      }
     }
   }
 
