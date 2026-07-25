@@ -136,6 +136,7 @@ export function AddPlacePage({ boardId }) {
 
   if (boardStatus === "reentry") return <Reentry boardId={boardId} />;
   if (boardStatus === "loading") return <main className="min-h-screen p-5">모임 정보를 불러오는 중이에요.</main>;
+  if (boardStatus === "error") return <BootstrapError boardId={boardId} onRetry={reload} />;
 
   const field = (key, placeholder) => <input value={form[key]} onChange={(event) => updateForm(key, event.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3" placeholder={placeholder} />;
   return <main className="min-h-screen p-4">
@@ -165,4 +166,8 @@ export function AddPlacePage({ boardId }) {
 
 function Reentry({ boardId }) {
   return <main className="flex min-h-screen items-center justify-center bg-bg px-5 text-center"><div><p className="font-bold">이 모임의 참여 정보가 없어요.</p><p className="mt-2 text-sm text-ink-2">초대 링크로 다시 입장한 뒤 이용해 주세요.</p><Button className="mt-4" onClick={() => navigate(`/boards/${boardId}/profile`)}>프로필로 이동</Button></div></main>;
+}
+
+function BootstrapError({ boardId, onRetry }) {
+  return <main className="flex min-h-screen items-center justify-center bg-bg px-5 text-center"><div><p className="font-bold">모임 정보를 불러오지 못했어요.</p><p className="mt-2 text-sm text-ink-2">장소를 추가하기 전에 모임 정보를 다시 확인해 주세요.</p><Button className="mt-4" onClick={onRetry}>다시 시도</Button><Button variant="line" className="mt-2" onClick={() => navigate(`/boards/${boardId}`)}>모임으로 돌아가기</Button></div></main>;
 }

@@ -70,7 +70,7 @@ function AppContent({ route }) {
 
   const page = routes[route.route] || <div className="py-10 text-center">페이지를 찾을 수 없어요</div>;
   return isServerBoardRoute
-    ? <ServerBoardProvider boardId={route.params.boardId}>{page}</ServerBoardProvider>
+    ? <ServerBoardProvider key={route.params.boardId} boardId={route.params.boardId}>{page}</ServerBoardProvider>
     : page;
 }
 
