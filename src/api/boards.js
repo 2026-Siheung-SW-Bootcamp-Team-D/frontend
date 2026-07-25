@@ -1,5 +1,17 @@
 import { boardRequestConfig, getApiClient, publicRequestConfig } from "./client";
+import { ApiError } from "./errors";
 import { saveBoardSession } from "./session";
+
+function storageError() {
+  return new ApiError({
+    status: null,
+    code: "SESSION_STORAGE_UNAVAILABLE",
+    retryAfterSeconds: null,
+    requestId: null,
+    isNetworkError: false,
+    isCanceled: false,
+  });
+}
 
 function saveCreatedBoardSession(response) {
   const boardId = response?.board?.boardId;
@@ -8,7 +20,8 @@ function saveCreatedBoardSession(response) {
   if (typeof boardId !== "string" || typeof participantId !== "string" || typeof participantToken !== "string") {
     return false;
   }
-  return saveBoardSession(boardId, { participantId, participantToken });
+  if (!saveBoardSession(boardId, { participantId, participantToken })) throw storageError();
+  return true;
 }
 
 function saveJoinedBoardSession(response) {
@@ -16,7 +29,8 @@ function saveJoinedBoardSession(response) {
   if (typeof boardId !== "string" || typeof participantId !== "string" || typeof participantToken !== "string") {
     return false;
   }
-  return saveBoardSession(boardId, { participantId, participantToken });
+  if (!saveBoardSession(boardId, { participantId, participantToken })) throw storageError();
+  return true;
 }
 
 export async function createBoard({ name, purpose, creatorNickname }, { signal } = {}) {
@@ -25,7 +39,7 @@ export async function createBoard({ name, purpose, creatorNickname }, { signal }
     { name, purpose: purpose ?? null, creatorNickname },
     publicRequestConfig(signal),
   );
-  saveCreatedBoardSession(response.data);
+  if (!saveCreatedBoardSession(response.data)) throw storageError();
   return response.data;
 }
 
@@ -45,7 +59,7 @@ export async function joinBoard(inviteCode, { nickname }, { signal } = {}) {
     { nickname },
     publicRequestConfig(signal),
   );
-  saveJoinedBoardSession(response.data);
+  if (!saveJoinedBoardSession(response.data)) throw storageError();
   return response.data;
 }
 

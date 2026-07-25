@@ -87,4 +87,8 @@ export function clearBoardSession(boardId) {
   return writeSessions(sessions);
 }
 
+export function getBoardSessionIds() {
+  return Object.keys(readSessions());
+}
+
 export { STORAGE_KEY };

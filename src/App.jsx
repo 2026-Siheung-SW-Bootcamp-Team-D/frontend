@@ -24,7 +24,7 @@ function AppContent({ route }) {
     "profile",
   ].includes(route.route);
 
-  if (isBoardScopedRoute && isActiveBoardMissing) {
+  if (isBoardScopedRoute && route.route !== "profile" && isActiveBoardMissing) {
     return <div className="py-10 text-center">페이지를 찾을 수 없어요</div>;
   }
 
