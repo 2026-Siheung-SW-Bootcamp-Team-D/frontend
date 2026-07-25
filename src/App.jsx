@@ -12,9 +12,11 @@ import { PlaceDetailPage } from "./pages/PlaceDetailPage";
 import { CreateBoardPage } from "./pages/CreateBoardPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { BoardContext } from "./store/BoardContext";
+import { ServerBoardProvider } from "./store/ServerBoardProvider";
 
 function AppContent({ route }) {
   const { isActiveBoardMissing } = useContext(BoardContext);
+  const isServerBoardRoute = ["board", "place-detail", "add-place"].includes(route.route);
   const isBoardScopedRoute = [
     "board",
     "place-detail",
@@ -24,7 +26,7 @@ function AppContent({ route }) {
     "profile",
   ].includes(route.route);
 
-  if (isBoardScopedRoute && route.route !== "profile" && isActiveBoardMissing) {
+  if (isBoardScopedRoute && !isServerBoardRoute && route.route !== "profile" && isActiveBoardMissing) {
     return <div className="py-10 text-center">페이지를 찾을 수 없어요</div>;
   }
 
@@ -66,11 +68,10 @@ function AppContent({ route }) {
     ),
   };
 
-  return (
-    routes[route.route] || (
-      <div className="py-10 text-center">페이지를 찾을 수 없어요</div>
-    )
-  );
+  const page = routes[route.route] || <div className="py-10 text-center">페이지를 찾을 수 없어요</div>;
+  return isServerBoardRoute
+    ? <ServerBoardProvider boardId={route.params.boardId}>{page}</ServerBoardProvider>
+    : page;
 }
 
 export default function App() {
