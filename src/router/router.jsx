@@ -10,7 +10,7 @@ export function useHashRouter() {
 
   const hash = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // 경로 파싱: /boards/1/places/abc -> {route: 'place-detail', params: {boardId: '1', placeId: 'abc'}}
+  // 경로 파싱: /boards/:boardId/places/:placeId -> route params
   const parseRoute = (path) => {
     const pathParts = path.split("/").filter(Boolean);
 

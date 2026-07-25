@@ -1,6 +1,7 @@
 import { BoardProvider } from "./store/BoardProvider";
 import { useHashRouter } from "./router/router";
 import { Toast } from "./components/UI";
+import { useContext } from "react";
 import { AddPlacePage } from "./pages/AddPlacePage";
 import { AreaSearchPage } from "./pages/AreaSearchPage";
 import { BoardPage } from "./pages/BoardPage";
@@ -10,34 +11,75 @@ import { NearbyPage } from "./pages/NearbyPage";
 import { PlaceDetailPage } from "./pages/PlaceDetailPage";
 import { CreateBoardPage } from "./pages/CreateBoardPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { BoardContext } from "./store/BoardContext";
 
-function AppContent() {
-  const { route } = useHashRouter();
+function AppContent({ route }) {
+  const { isActiveBoardMissing } = useContext(BoardContext);
+  const isBoardScopedRoute = [
+    "board",
+    "place-detail",
+    "add-place",
+    "area-search",
+    "nearby",
+    "profile",
+  ].includes(route.route);
+
+  if (isBoardScopedRoute && isActiveBoardMissing) {
+    return <div className="py-10 text-center">페이지를 찾을 수 없어요</div>;
+  }
 
   const routes = {
     home: <HomePage />,
-    join: <JoinPage code={route.params.code} />,
+    join: <JoinPage key={`join-${route.params.code}`} code={route.params.code} />,
     "create-board": <CreateBoardPage />,
-    board: <BoardPage boardId={route.params.boardId} />,
-    "place-detail": <PlaceDetailPage boardId={route.params.boardId} placeId={route.params.placeId} />,
-    "add-place": <AddPlacePage boardId={route.params.boardId} />,
-    "area-search": <AreaSearchPage boardId={route.params.boardId} />,
-    nearby: <NearbyPage boardId={route.params.boardId} />,
-    profile: <ProfilePage boardId={route.params.boardId} />,
+    board: <BoardPage key={`board-${route.params.boardId}`} boardId={route.params.boardId} />,
+    "place-detail": (
+      <PlaceDetailPage
+        key={`place-${route.params.boardId}-${route.params.placeId}`}
+        boardId={route.params.boardId}
+        placeId={route.params.placeId}
+      />
+    ),
+    "add-place": (
+      <AddPlacePage
+        key={`add-${route.params.boardId}`}
+        boardId={route.params.boardId}
+      />
+    ),
+    "area-search": (
+      <AreaSearchPage
+        key={`area-${route.params.boardId}`}
+        boardId={route.params.boardId}
+      />
+    ),
+    nearby: (
+      <NearbyPage
+        key={`nearby-${route.params.boardId}`}
+        boardId={route.params.boardId}
+      />
+    ),
+    profile: (
+      <ProfilePage
+        key={`profile-${route.params.boardId}`}
+        boardId={route.params.boardId}
+      />
+    ),
   };
 
   return (
     routes[route.route] || (
-      <div className="text-center py-10">페이지를 찾을 수 없어요</div>
+      <div className="py-10 text-center">페이지를 찾을 수 없어요</div>
     )
   );
 }
 
 export default function App() {
+  const { route } = useHashRouter();
+
   return (
-    <BoardProvider>
-      <div className="bg-bg min-h-screen w-full flex flex-col mx-auto relative">
-        <AppContent />
+    <BoardProvider activeBoardId={route.params.boardId}>
+      <div className="relative mx-auto flex min-h-screen w-full flex-col bg-bg">
+        <AppContent route={route} />
         <Toast />
       </div>
     </BoardProvider>
