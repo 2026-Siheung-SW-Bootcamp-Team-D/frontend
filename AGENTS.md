@@ -56,6 +56,7 @@ API는 별도 배포되는 Spring Boot 서버가 담당한다. 기능·API 계�
 - **HTTP 호출은 `src/api/`의 공용 axios 인스턴스를 거친다.** 컴포넌트에서 `axios`를 직접 import 하지 않는다.
   baseURL·인증 헤더·에러 변환을 한 곳에서 바꾸기 위해서다.
 - **baseURL은 `import.meta.env.VITE_API_BASE_URL`에서 읽는다.** 서버 주소를 코드에 하드코딩하지 않는다.
+- **`VITE_API_BASE_URL`은 `/api/v1`까지 포함한다.** API 모듈은 `/api/v1`을 다시 붙이지 않고 `/boards`처럼 자원 경로만 전달한다.
 - **서버 응답을 컴포넌트까지 그대로 흘려보내지 않는다.** `src/api/`에서 화면이 쓸 형태로 한 번 변환한다.
   응답 필드명이 컴포넌트 곳곳에 퍼지면 API가 바뀔 때 전부 고쳐야 한다.
 - **요청 결과를 state에 넣기 전에 컴포넌트가 아직 살아 있는지 확인한다.** `AbortController`로 취소하거나

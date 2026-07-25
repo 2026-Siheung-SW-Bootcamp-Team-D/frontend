@@ -153,7 +153,8 @@ Vercel은 GitHub에 코드를 올리면 **자동으로 빌드해서 인터넷에
 
    | Name | Value |
    |---|---|
-   | `VITE_API_BASE_URL` | 배포된 백엔드 주소 (예: `https://api.example.com`) |
+   | `VITE_API_BASE_URL` | `/api/v1`까지 포함한 배포 API 주소 (예: `https://api.yeondang.com/api/v1`) |
+   | `VITE_KAKAO_JAVASCRIPT_KEY` | Kakao Maps JavaScript SDK 공개 키 (REST 키 금지) |
 
 5. `Deploy` 클릭
 
