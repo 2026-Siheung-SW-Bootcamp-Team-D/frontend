@@ -158,6 +158,11 @@ Vercel은 GitHub에 코드를 올리면 **자동으로 빌드해서 인터넷에
 
 5. `Deploy` 클릭
 
+Kakao 지도를 사용하려면 Kakao Developers의 Web 플랫폼에도 현재 도메인을 등록해야 합니다.
+로컬은 `http://localhost:5173`, 운영은 `https://yeondang.com`과
+`https://www.yeondang.com`, preview는 승인한 Vercel 도메인만 등록합니다.
+키가 없거나 SDK가 차단된 환경에서는 화면이 멈추지 않고 “지도 사용 불가” 안내와 기존 목록·좌표 입력 흐름을 표시합니다.
+
 ### 그 다음부터
 
 **GitHub `main` 브랜치에 push하면 자동으로 다시 배포됩니다.** 따로 할 일이 없습니다.
