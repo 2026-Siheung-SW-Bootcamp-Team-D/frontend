@@ -1,6 +1,5 @@
 import { useHashRouter } from "./router/router";
 import { Toast } from "./components/UI";
-import { AddPlacePage } from "./pages/AddPlacePage";
 import { AreaSearchPage } from "./pages/AreaSearchPage";
 import { BoardPage } from "./pages/BoardPage";
 import { HomePage } from "./pages/HomePage";
@@ -26,12 +25,7 @@ function AppContent({ route }) {
         placeId={route.params.placeId}
       />
     ),
-    "add-place": (
-      <AddPlacePage
-        key={`add-${route.params.boardId}`}
-        boardId={route.params.boardId}
-      />
-    ),
+    "add-place": <BoardPage key={`board-${route.params.boardId}`} boardId={route.params.boardId} />,
     "area-search": (
       <AreaSearchPage
         key={`area-${route.params.boardId}`}
