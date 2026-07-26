@@ -8,8 +8,9 @@ import { useServerBoard } from "../store/ServerBoardContext";
 
 function errorMessage(error) {
   if (error?.status === 401) return "참여 정보가 만료되었어요. 초대 링크로 다시 입장해 주세요.";
+  if (error?.status === 404) return "장소를 찾을 수 없어요.";
   if (error?.status === 409) return "다른 참여자가 먼저 변경했어요. 최신 상태를 다시 불러왔어요.";
-  if (error?.status === 429) return "요청이 많아요. 잠시 후 다시 시도해 주세요.";
+  if (error?.status === 429) return error.retryAfterSeconds ? `${error.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : "요청이 많아요. 잠시 후 다시 시도해 주세요.";
   if ([502, 503].includes(error?.status)) return "서비스가 일시적으로 응답하지 않아요. 다시 시도해 주세요.";
   return "요청을 처리하지 못했어요. 다시 시도해 주세요.";
 }
@@ -18,35 +19,73 @@ export function PlaceDetailPage({ boardId, placeId }) {
   const { board, currentParticipantId, status: boardStatus, reload } = useServerBoard();
   const [place, setPlace] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentsPage, setCommentsPage] = useState({ number: 1, size: 20, totalItems: 0, totalPages: 0 });
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [commentText, setCommentText] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState("");
   const [mutating, setMutating] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const loadControllerRef = useRef(null);
+  const mutationControllerRef = useRef(null);
+  const loadGenerationRef = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ externalSignal } = {}) => {
     loadControllerRef.current?.abort();
     const controller = new AbortController();
     loadControllerRef.current = controller;
+    const generation = ++loadGenerationRef.current;
+    const abortFromConsumer = () => controller.abort();
+    if (externalSignal?.aborted) controller.abort();
+    else externalSignal?.addEventListener("abort", abortFromConsumer, { once: true });
     setStatus("loading");
     setError("");
     try {
       const [nextPlace, nextComments] = await Promise.all([
         getPlace(boardId, placeId, { signal: controller.signal }),
-        listComments(boardId, placeId, { signal: controller.signal }),
+        listComments(boardId, placeId, { page: 1, size: 20, signal: controller.signal }),
       ]);
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || generation !== loadGenerationRef.current) return;
       setPlace(nextPlace);
-      setComments(nextComments);
+      setComments(nextComments.items);
+      setCommentsPage(nextComments.page);
       setStatus("ready");
     } catch (requestError) {
       if (controller.signal.aborted || requestError?.isCanceled) return;
       setError(errorMessage(requestError));
       setStatus(requestError?.status === 401 ? "reentry" : "error");
+    } finally {
+      externalSignal?.removeEventListener("abort", abortFromConsumer);
     }
   }, [boardId, placeId]);
+
+  const loadMoreComments = async () => {
+    if (loadingMore || commentsPage.number >= commentsPage.totalPages) return;
+    loadControllerRef.current?.abort();
+    const controller = new AbortController();
+    loadControllerRef.current = controller;
+    const generation = ++loadGenerationRef.current;
+    setLoadingMore(true);
+    setError("");
+    try {
+      const response = await listComments(boardId, placeId, {
+        page: commentsPage.number + 1,
+        size: commentsPage.size || 20,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted || generation !== loadGenerationRef.current) return;
+      setComments((current) => {
+        const seen = new Set(current.map((comment) => comment.id));
+        return [...current, ...response.items.filter((comment) => !seen.has(comment.id))];
+      });
+      setCommentsPage(response.page);
+    } catch (requestError) {
+      if (!controller.signal.aborted && !requestError?.isCanceled) setError(errorMessage(requestError));
+    } finally {
+      if (!controller.signal.aborted) setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     if (boardStatus === "reentry") return undefined;
@@ -54,23 +93,31 @@ export function PlaceDetailPage({ boardId, placeId }) {
     return () => {
       window.clearTimeout(timer);
       loadControllerRef.current?.abort();
+      mutationControllerRef.current?.abort();
     };
   }, [boardStatus, load]);
 
   const mutate = async (operation, { navigateAfter = false } = {}) => {
     if (mutating) return;
+    mutationControllerRef.current?.abort();
+    const controller = new AbortController();
+    mutationControllerRef.current = controller;
     setMutating(true);
     setError("");
     try {
-      await operation();
-      await reload();
+      await operation(controller.signal);
+      if (controller.signal.aborted) return;
+      await reload(controller.signal);
+      if (controller.signal.aborted) return;
       if (navigateAfter) navigate(`/boards/${boardId}`);
-      else await load();
+      else await load({ externalSignal: controller.signal });
     } catch (requestError) {
-      if (requestError?.status === 409) await reload();
-      if (!requestError?.isCanceled) setError(errorMessage(requestError));
+      if (controller.signal.aborted || requestError?.isCanceled) return;
+      if (requestError?.status === 401) setStatus("reentry");
+      if (requestError?.status === 409) await reload(controller.signal);
+      if (!controller.signal.aborted) setError(errorMessage(requestError));
     } finally {
-      setMutating(false);
+      if (!controller.signal.aborted) setMutating(false);
     }
   };
 
@@ -80,9 +127,9 @@ export function PlaceDetailPage({ boardId, placeId }) {
       setError("댓글은 1~500자로 입력해 주세요.");
       return;
     }
-    mutate(async () => {
-      await createComment(boardId, placeId, content);
-      setCommentText("");
+    mutate(async (signal) => {
+      await createComment(boardId, placeId, content, { signal });
+      if (!signal.aborted) setCommentText("");
     });
   };
 
@@ -100,13 +147,14 @@ export function PlaceDetailPage({ boardId, placeId }) {
         <p className="mt-1 text-[13px] text-ink-2">{place.address || "주소 정보 없음"}</p>
         {error && <p role="alert" className="mt-3 rounded-xl bg-white p-3 text-sm text-coral">{error}</p>}
         <div className="mt-4 flex gap-2.5">
-          <button disabled={mutating} type="button" aria-label={`좋아요 ${place.likeCount}`} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] py-3 text-[14px] font-bold disabled:opacity-50 ${place.likedByMe ? "border-coral bg-coral text-white" : "border-line bg-white text-ink"}`} onClick={() => mutate(() => setPlaceLike(boardId, placeId, !place.likedByMe))}><span>{place.likedByMe ? "🩷" : "🤍"}</span> {place.likeCount}</button>
+          <button disabled={mutating} type="button" aria-label={`좋아요 ${place.likeCount}`} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] py-3 text-[14px] font-bold disabled:opacity-50 ${place.likedByMe ? "border-coral bg-coral text-white" : "border-line bg-white text-ink"}`} onClick={() => mutate((signal) => setPlaceLike(boardId, placeId, !place.likedByMe, { signal }))}><span>{place.likedByMe ? "🩷" : "🤍"}</span> {place.likeCount}</button>
           <button disabled={!place.sourceUrl} type="button" aria-label="원본 지도에서 상세 보기" className="w-[52px] rounded-[14px] border-[1.5px] border-line bg-white text-[18px] disabled:opacity-40" onClick={() => window.open(place.sourceUrl, "_blank", "noopener,noreferrer")}>🔗</button>
         </div>
-        {!selected ? <Button disabled={mutating} className="mt-2.5 disabled:opacity-50" onClick={() => mutate(() => selectPlace(boardId, placeId))}>📍 여기를 '지금 여기'로</Button> : <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => mutate(() => clearSelectedPlace(boardId))}>현재 선택 해제</Button>}
-        <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => { if (window.confirm("이 장소를 보관할까요?")) mutate(() => archivePlace(boardId, placeId), { navigateAfter: true }); }}>가고 싶은 곳 보관</Button>
-        <div className="mb-1.5 mt-5.5 text-[14px] font-bold">의견 <span className="text-ink-3">{comments.length}</span></div>
-        <div className="mb-4 space-y-3">{comments.map((comment) => <div key={comment.id} className="flex gap-2.5"><Avatar label={comment.authorName} /><div className="min-w-0 flex-1"><div className="text-[12.5px] font-bold">{comment.authorName}</div>{editingId === comment.id ? <><input className="mt-1 w-full rounded-lg border border-line p-2 text-[13px]" value={editingText} onChange={(event) => setEditingText(event.target.value)} /><div className="mt-1 flex gap-2"><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => { const content = editingText.trim(); if (content.length >= 1 && content.length <= 500) mutate(async () => { await updateComment(boardId, placeId, comment.id, content); setEditingId(null); }); else setError("댓글은 1~500자로 입력해 주세요."); }}>저장</button><button disabled={mutating} type="button" className="text-xs text-ink-2" onClick={() => setEditingId(null)}>취소</button></div></> : <><div className="mt-0.5 text-[13.5px]">{comment.content}</div><div className="mt-1 text-[10.5px] text-ink-3">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ""}</div>{comment.authorId === currentParticipantId && <div className="mt-1 flex gap-2"><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => { setEditingId(comment.id); setEditingText(comment.content); }}>수정</button><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => mutate(() => deleteComment(boardId, placeId, comment.id))}>삭제</button></div>}</>}</div></div>)}</div>
+        {!selected ? <Button disabled={mutating} className="mt-2.5 disabled:opacity-50" onClick={() => mutate((signal) => selectPlace(boardId, placeId, { signal }))}>📍 여기를 '지금 여기'로</Button> : <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => mutate((signal) => clearSelectedPlace(boardId, { signal }))}>현재 선택 해제</Button>}
+        <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => { if (window.confirm("이 장소를 보관할까요?")) mutate((signal) => archivePlace(boardId, placeId, { signal }), { navigateAfter: true }); }}>가고 싶은 곳 보관</Button>
+        <div className="mb-1.5 mt-5.5 text-[14px] font-bold">의견 <span className="text-ink-3">{commentsPage.totalItems || comments.length}</span> <small>({comments.length}개 표시)</small></div>
+        <div className="mb-4 space-y-3">{comments.map((comment) => <div key={comment.id} className="flex gap-2.5"><Avatar label={comment.authorName} /><div className="min-w-0 flex-1"><div className="text-[12.5px] font-bold">{comment.authorName}</div>{editingId === comment.id ? <><input className="mt-1 w-full rounded-lg border border-line p-2 text-[13px]" value={editingText} onChange={(event) => setEditingText(event.target.value)} /><div className="mt-1 flex gap-2"><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => { const content = editingText.trim(); if (content.length >= 1 && content.length <= 500) mutate(async (signal) => { await updateComment(boardId, placeId, comment.id, content, { signal }); if (!signal.aborted) setEditingId(null); }); else setError("댓글은 1~500자로 입력해 주세요."); }}>저장</button><button disabled={mutating} type="button" className="text-xs text-ink-2" onClick={() => setEditingId(null)}>취소</button></div></> : <><div className="mt-0.5 text-[13.5px]">{comment.content}</div><div className="mt-1 text-[10.5px] text-ink-3">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ""}</div>{comment.authorId === currentParticipantId && <div className="mt-1 flex gap-2"><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => { setEditingId(comment.id); setEditingText(comment.content); }}>수정</button><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => mutate((signal) => deleteComment(boardId, placeId, comment.id, { signal }))}>삭제</button></div>}</>}</div></div>)}</div>
+        {commentsPage.number < commentsPage.totalPages && <Button variant="line" className="mb-4 !py-3" disabled={loadingMore || mutating} onClick={loadMoreComments}>{loadingMore ? "불러오는 중…" : "댓글 더 보기"}</Button>}
         <div className="flex gap-2"><input disabled={mutating} className="flex-1 rounded-full border border-line px-4 py-3 text-[13.5px]" placeholder="의견을 남겨주세요" value={commentText} onChange={(event) => setCommentText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitComment(); }} /><button disabled={mutating} type="button" aria-label="댓글 등록" className="w-11 rounded-full bg-coral text-[17px] text-white disabled:opacity-50" onClick={submitComment}>➤</button></div>
       </div>
     </div>

@@ -10,9 +10,12 @@ function pathWithQuery(path, values) {
   return suffix ? `${path}?${suffix}` : path;
 }
 
-export async function listPlaces(boardId, { signal } = {}) {
-  const response = await getApiClient().get(`/boards/${encodeURIComponent(boardId)}/places`, boardRequestConfig(boardId, signal));
-  return (response.data?.items ?? []).map(mapPlace);
+export async function listPlaces(boardId, { page = 1, size = 20, signal } = {}) {
+  const response = await getApiClient().get(pathWithQuery(`/boards/${encodeURIComponent(boardId)}/places`, { page, size }), boardRequestConfig(boardId, signal));
+  return {
+    items: (response.data?.items ?? []).map(mapPlace),
+    page: response.data?.page ?? { number: page, size, totalItems: 0, totalPages: 0 },
+  };
 }
 
 export async function getPlace(boardId, placeId, { signal } = {}) {

@@ -1,7 +1,5 @@
-import { BoardProvider } from "./store/BoardProvider";
 import { useHashRouter } from "./router/router";
 import { Toast } from "./components/UI";
-import { useContext } from "react";
 import { AddPlacePage } from "./pages/AddPlacePage";
 import { AreaSearchPage } from "./pages/AreaSearchPage";
 import { BoardPage } from "./pages/BoardPage";
@@ -11,24 +9,10 @@ import { NearbyPage } from "./pages/NearbyPage";
 import { PlaceDetailPage } from "./pages/PlaceDetailPage";
 import { CreateBoardPage } from "./pages/CreateBoardPage";
 import { ProfilePage } from "./pages/ProfilePage";
-import { BoardContext } from "./store/BoardContext";
 import { ServerBoardProvider } from "./store/ServerBoardProvider";
 
 function AppContent({ route }) {
-  const { isActiveBoardMissing } = useContext(BoardContext);
   const isServerBoardRoute = ["board", "place-detail", "add-place", "area-search", "nearby"].includes(route.route);
-  const isBoardScopedRoute = [
-    "board",
-    "place-detail",
-    "add-place",
-    "area-search",
-    "nearby",
-    "profile",
-  ].includes(route.route);
-
-  if (isBoardScopedRoute && !isServerBoardRoute && route.route !== "profile" && isActiveBoardMissing) {
-    return <div className="py-10 text-center">페이지를 찾을 수 없어요</div>;
-  }
 
   const routes = {
     home: <HomePage />,
@@ -79,12 +63,8 @@ function AppContent({ route }) {
 export default function App() {
   const { route } = useHashRouter();
 
-  return (
-    <BoardProvider activeBoardId={route.params.boardId}>
-      <div className="relative mx-auto flex min-h-screen w-full flex-col bg-bg">
-        <AppContent route={route} />
-        <Toast />
-      </div>
-    </BoardProvider>
-  );
+  return <div className="relative mx-auto flex min-h-screen w-full flex-col bg-bg">
+    <AppContent route={route} />
+    <Toast />
+  </div>;
 }

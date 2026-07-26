@@ -48,6 +48,15 @@ export async function getBoard(boardId, { signal } = {}) {
   return response.data;
 }
 
+export async function patchBoard(boardId, patch, { signal } = {}) {
+  const response = await getApiClient().patch(
+    `/boards/${encodeURIComponent(boardId)}`,
+    patch,
+    boardRequestConfig(boardId, signal),
+  );
+  return response.data;
+}
+
 export async function getInvitationPreview(inviteCode, { signal } = {}) {
   const response = await getApiClient().get(`/invitations/${encodeURIComponent(inviteCode)}`, publicRequestConfig(signal));
   return response.data;

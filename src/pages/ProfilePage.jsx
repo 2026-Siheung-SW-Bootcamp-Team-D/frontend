@@ -1,33 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getBoard, getParticipants, patchMyParticipant } from "../api/boards";
 import { ApiError } from "../api/errors";
+import { reverseGeocode, searchAddresses } from "../api/places";
 import { getBoardSession } from "../api/session";
 import { Button } from "../components/UI";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 
-const ORIGINS = [
-  { label: "왕십리역", lat: 37.561, lon: 127.038 },
-  { label: "성수역", lat: 37.544, lon: 127.055 },
-  { label: "서울역", lat: 37.555, lon: 126.97 },
-];
-
 function messageFor(error) {
   if (error instanceof ApiError) {
     if (error.status === 401) return "참여 정보가 만료됐어요. 초대 링크로 다시 입장해 주세요.";
     if (error.status === 404) return "모임을 찾을 수 없어요.";
-    if (error.status === 409) return "닫힌 모임에서는 프로필을 수정할 수 없어요.";
+    if (error.status === 409) return "진행 중인 지역 탐색이 있거나 모임이 닫혀 있어요. 최신 상태를 확인해 주세요.";
     if (error.status === 422) return "출발지 정보를 다시 확인해 주세요.";
     if (error.status === 429) return error.retryAfterSeconds ? `${error.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : "요청이 많아요. 잠시 후 다시 시도해 주세요.";
     if ([502, 503].includes(error.status)) return "서버가 잠시 불안정해요. 다시 시도해 주세요.";
   }
-  return "정보를 불러오지 못했어요. 다시 시도해 주세요.";
+  return "정보를 처리하지 못했어요. 다시 시도해 주세요.";
 }
 
 function originFromParticipant(participant) {
   const origin = participant?.origin;
   if (!origin?.registered || !Number.isFinite(origin.lat) || !Number.isFinite(origin.lon)) return null;
-  return { label: origin.label || "선택한 위치", lat: origin.lat, lon: origin.lon };
+  return { label: origin.label || "선택한 위치", lat: origin.lat, lon: origin.lon, source: "MANUAL_PIN" };
 }
 
 export function ProfilePage({ boardId }) {
@@ -36,14 +31,17 @@ export function ProfilePage({ boardId }) {
   const [participants, setParticipants] = useState([]);
   const [nickname, setNickname] = useState("");
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [searchState, setSearchState] = useState("idle");
   const [chosen, setChosen] = useState(null);
   const [originChanged, setOriginChanged] = useState(false);
   const [loading, setLoading] = useState(Boolean(session));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [sessionLost, setSessionLost] = useState(false);
-
-  const results = query.trim().length >= 2 ? ORIGINS.filter((item) => item.label.includes(query.trim())) : [];
+  const searchControllerRef = useRef(null);
+  const reverseControllerRef = useRef(null);
+  const saveControllerRef = useRef(null);
 
   useEffect(() => {
     if (!session) return undefined;
@@ -53,6 +51,7 @@ export function ProfilePage({ boardId }) {
       getParticipants(boardId, { signal: controller.signal }),
     ])
       .then(([nextBoard, response]) => {
+        if (controller.signal.aborted) return;
         const nextParticipants = response.items ?? [];
         const currentParticipant = nextParticipants.find((participant) => participant.participantId === session.participantId);
         setBoard(nextBoard);
@@ -62,45 +61,111 @@ export function ProfilePage({ boardId }) {
         setOriginChanged(false);
       })
       .catch((requestError) => {
-        if (requestError?.isCanceled) return;
+        if (controller.signal.aborted || requestError?.isCanceled) return;
         if (requestError?.status === 401) setSessionLost(true);
         setError(messageFor(requestError));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      searchControllerRef.current?.abort();
+      reverseControllerRef.current?.abort();
+      saveControllerRef.current?.abort();
+    };
   }, [boardId, session]);
 
-  function chooseOrigin(origin) {
-    setChosen(origin);
+  async function runSearch() {
+    const term = query.trim();
+    if (term.length < 2 || term.length > 60) {
+      setSearchState("invalid");
+      return;
+    }
+    searchControllerRef.current?.abort();
+    reverseControllerRef.current?.abort();
+    const controller = new AbortController();
+    searchControllerRef.current = controller;
+    setSearchState("loading");
+    setError("");
+    try {
+      const nextResults = await searchAddresses(boardId, term, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setResults(nextResults);
+      setSearchState(nextResults.length ? "results" : "empty");
+    } catch (requestError) {
+      if (controller.signal.aborted || requestError?.isCanceled) return;
+      if (requestError?.status === 401) setSessionLost(true);
+      setError(messageFor(requestError));
+      setSearchState("error");
+    }
+  }
+
+  function changeQuery(value) {
+    searchControllerRef.current?.abort();
+    setQuery(value);
+    setResults([]);
+    setSearchState("idle");
+  }
+
+  function chooseSearchOrigin(origin) {
+    searchControllerRef.current?.abort();
+    setChosen({ ...origin, source: "KAKAO_ADDRESS" });
     setOriginChanged(true);
     setQuery("");
+    setResults([]);
+    setSearchState("idle");
+  }
+
+  async function chooseMapPoint(point) {
+    searchControllerRef.current?.abort();
+    reverseControllerRef.current?.abort();
+    const controller = new AbortController();
+    reverseControllerRef.current = controller;
+    setError("");
+    try {
+      const address = await reverseGeocode(boardId, point, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setChosen({ label: address.label, lat: address.lat, lon: address.lon, source: "MANUAL_PIN" });
+      setOriginChanged(true);
+      setQuery("");
+      setResults([]);
+      setSearchState("idle");
+    } catch (requestError) {
+      if (!controller.signal.aborted && !requestError?.isCanceled) {
+        if (requestError?.status === 401) setSessionLost(true);
+        setError(messageFor(requestError));
+      }
+    }
   }
 
   async function save() {
     const nextNickname = nickname.trim();
     if (nextNickname.length < 1 || nextNickname.length > 20) return setError("닉네임은 1~20자로 입력해 주세요.");
+    saveControllerRef.current?.abort();
+    const controller = new AbortController();
+    saveControllerRef.current = controller;
     const patch = { nickname: nextNickname };
     if (originChanged) {
       patch.origin = chosen
-        ? { label: chosen.label, lon: chosen.lon, lat: chosen.lat, source: "MANUAL_PIN" }
+        ? { label: chosen.label, lon: chosen.lon, lat: chosen.lat, source: chosen.source, providerPlaceId: chosen.providerPlaceId || null }
         : null;
     }
-
     setSaving(true);
     setError("");
     try {
-      const response = await patchMyParticipant(boardId, patch);
+      const response = await patchMyParticipant(boardId, patch, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       setParticipants((current) => current.map((participant) => participant.participantId === response.participantId ? response : participant));
       setNickname(response.nickname);
       setChosen(originFromParticipant(response));
       setOriginChanged(false);
     } catch (requestError) {
+      if (controller.signal.aborted || requestError?.isCanceled) return;
       if (requestError?.status === 401) setSessionLost(true);
       setError(messageFor(requestError));
     } finally {
-      setSaving(false);
+      if (!controller.signal.aborted) setSaving(false);
     }
   }
 
@@ -108,5 +173,25 @@ export function ProfilePage({ boardId }) {
   if (loading) return <main className="flex min-h-screen items-center justify-center p-5 text-ink-2">참여자 정보를 불러오는 중이에요…</main>;
   if (error && !board) return <main className="flex min-h-screen items-center justify-center p-5 text-center"><div><h1 className="text-2xl font-bold">프로필을 열 수 없어요</h1><p className="mt-2 text-ink-2">{error}</p><Button className="mt-5" onClick={() => window.location.reload()}>다시 시도</Button><Button variant="line" className="mt-2" onClick={() => navigate("/")}>홈으로</Button></div></main>;
 
-  return <main className="min-h-screen p-5"><button type="button" onClick={() => navigate("/")}>← 홈</button><p className="mt-6 text-sm text-coral">{board?.name}</p><h1 className="mt-1 text-2xl font-bold">참여자 정보</h1><label className="mt-5 block font-bold">내 닉네임</label><input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength="20" className="mt-2 w-full rounded-xl border border-line bg-white p-3" /><label className="mt-5 block font-bold">내 출발지</label><input value={query} onChange={(event) => setQuery(event.target.value)} maxLength="80" className="mt-2 w-full rounded-xl border border-line bg-white p-3" placeholder="역·건물·주소 검색" />{results.map((item) => <button key={item.label} type="button" onClick={() => chooseOrigin(item)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-left"><b>{item.label}</b><small className="ml-2 text-ink-2">좌표 확인됨</small></button>)}<KakaoMap className="mt-3 h-56 w-full overflow-hidden rounded-2xl" center={chosen ?? undefined} markers={chosen ? [{ id: "origin", name: chosen.label, ...chosen }] : []} onMapClick={(point) => chooseOrigin({ label: "선택한 위치", ...point })} />{chosen ? <div className="mt-2 flex items-center justify-between gap-3 text-sm"><p className="text-coral">선택됨: {chosen.label}</p><button type="button" className="text-ink-2 underline" onClick={() => { setChosen(null); setOriginChanged(true); }}>출발지 삭제</button></div> : <p className="mt-2 text-sm text-ink-2">출발지를 선택하면 지역 찾기에 사용할 수 있어요.</p>}{error && <p className="mt-3 text-sm text-coral">{error}</p>}<Button className="mt-4" disabled={saving} onClick={save}>{saving ? "저장하는 중…" : "프로필 저장"}</Button><div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{participant.nickname?.[0]}</div><b className="flex-1">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small></div>)}</div></main>;
+  return <main className="min-h-screen p-5">
+    <button type="button" onClick={() => navigate(`/boards/${boardId}`)}>← 모임으로</button>
+    <p className="mt-6 text-sm text-coral">{board?.name}</p>
+    <h1 className="mt-1 text-2xl font-bold">참여자 정보</h1>
+    <label className="mt-5 block font-bold">내 닉네임</label>
+    <input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength="20" className="mt-2 w-full rounded-xl border border-line bg-white p-3" />
+    <label className="mt-5 block font-bold">내 출발지</label>
+    <div className="mt-2 flex gap-2">
+      <input value={query} onChange={(event) => changeQuery(event.target.value)} maxLength="60" className="min-w-0 flex-1 rounded-xl border border-line bg-white p-3" placeholder="역·건물·주소 검색" />
+      <Button className="!w-auto !py-3" disabled={searchState === "loading"} onClick={runSearch}>{searchState === "loading" ? "검색 중" : "검색"}</Button>
+    </div>
+    {searchState === "invalid" && <p className="mt-2 text-sm text-coral">검색어는 2~60자로 입력해 주세요.</p>}
+    {searchState === "empty" && <p className="mt-2 rounded-xl bg-white p-3 text-sm text-ink-2">검색 결과가 없어요. 지도에서 직접 선택할 수 있어요.</p>}
+    {results.map((item) => <button key={`${item.label}-${item.lat}-${item.lon}`} type="button" onClick={() => chooseSearchOrigin(item)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-left"><b>{item.label}</b><small className="ml-2 text-ink-2">{item.roadAddress || "좌표 확인됨"}</small></button>)}
+    <KakaoMap className="mt-3 h-56 w-full overflow-hidden rounded-2xl" center={chosen ?? undefined} markers={chosen ? [{ id: "origin", name: chosen.label, ...chosen }] : []} onMapClick={chooseMapPoint} />
+    {chosen ? <div className="mt-2 flex items-center justify-between gap-3 text-sm"><p className="text-coral">선택됨: {chosen.label}</p><button type="button" className="text-ink-2 underline" onClick={() => { setChosen(null); setOriginChanged(true); }}>출발지 삭제</button></div> : <p className="mt-2 text-sm text-ink-2">출발지를 선택하면 지역 찾기에 사용할 수 있어요.</p>}
+    {error && <p className="mt-3 text-sm text-coral">{error}</p>}
+    <Button className="mt-4" disabled={saving} onClick={save}>{saving ? "저장하는 중…" : "프로필 저장"}</Button>
+    <Button variant="line" className="mt-2" onClick={() => navigate(`/boards/${boardId}`)}>보드 지도로 돌아가기</Button>
+    <div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{participant.nickname?.[0]}</div><b className="flex-1">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small></div>)}</div>
+  </main>;
 }

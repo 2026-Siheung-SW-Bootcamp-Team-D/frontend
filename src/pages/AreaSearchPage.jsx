@@ -20,7 +20,7 @@ function messageFor(error) {
 }
 
 export function AreaSearchPage({ boardId }) {
-  const { status: boardStatus, participants } = useServerBoard();
+  const { status: boardStatus, participants, reload } = useServerBoard();
   const [duration, setDuration] = useState(45);
   const [job, setJob] = useState(null);
   const [anchors, setAnchors] = useState([]);
@@ -63,7 +63,10 @@ export function AreaSearchPage({ boardId }) {
         stopPolling();
       }
     } catch (requestError) {
-      if (!controller.signal.aborted && !requestError?.isCanceled) setError(messageFor(requestError));
+      if (!controller.signal.aborted && !requestError?.isCanceled) {
+        if (requestError?.status === 401) await reload(controller.signal);
+        if (!controller.signal.aborted) setError(messageFor(requestError));
+      }
       if (!controller.signal.aborted) stopPolling();
     }
   }
@@ -82,7 +85,10 @@ export function AreaSearchPage({ boardId }) {
       else if (ACTIVE_STATUSES.has(response.job.status)) poll(response.job.id);
       else setError("탐색 작업을 시작하지 못했어요. 다시 시도해 주세요.");
     } catch (requestError) {
-      if (!controller.signal.aborted && !requestError?.isCanceled) setError(messageFor(requestError));
+      if (!controller.signal.aborted && !requestError?.isCanceled) {
+        if (requestError?.status === 401) await reload(controller.signal);
+        if (!controller.signal.aborted) setError(messageFor(requestError));
+      }
     }
   }
 

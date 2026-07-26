@@ -7,13 +7,16 @@ import { useServerBoard } from "../store/ServerBoardContext";
 
 function errorMessage(error) {
   if (error?.status === 401) return "참여 정보가 만료되었어요. 초대 링크로 다시 입장해 주세요.";
-  if (error?.status === 429) return "요청이 많아요. 잠시 후 다시 시도해 주세요.";
+  if (error?.status === 409) return "모임 상태가 바뀌었어요. 최신 상태를 다시 확인해 주세요.";
+  if (error?.status === 429) return error.retryAfterSeconds ? `${error.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : "요청이 많아요. 잠시 후 다시 시도해 주세요.";
   if ([502, 503].includes(error?.status)) return "검색 서비스가 일시적으로 응답하지 않아요. 다시 시도해 주세요.";
   return "요청을 처리하지 못했어요. 다시 시도해 주세요.";
 }
 
 function hasPoint(point) {
-  return Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lon));
+  const lat = Number(point.lat);
+  const lon = Number(point.lon);
+  return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
 }
 
 export function AddPlacePage({ boardId }) {
@@ -28,10 +31,12 @@ export function AddPlacePage({ boardId }) {
   const [form, setForm] = useState({ name: "", roadAddress: "", jibunAddress: "", url: "", lat: "37.56", lon: "127.04" });
   const searchControllerRef = useRef(null);
   const reverseControllerRef = useRef(null);
+  const mutationControllerRef = useRef(null);
 
   useEffect(() => () => {
     searchControllerRef.current?.abort();
     reverseControllerRef.current?.abort();
+    mutationControllerRef.current?.abort();
   }, []);
 
   const updateForm = (key, value) => setForm((current) => ({ ...current, [key]: value }));
@@ -39,7 +44,7 @@ export function AddPlacePage({ boardId }) {
 
   const runSearch = async () => {
     const term = query.trim();
-    if (term.length < 2 || term.length > 80) {
+    if (term.length < 2 || term.length > 60) {
       setSearchState("invalid");
       return;
     }
@@ -66,16 +71,24 @@ export function AddPlacePage({ boardId }) {
 
   const submit = async (request) => {
     if (submitting) return;
+    mutationControllerRef.current?.abort();
+    const controller = new AbortController();
+    mutationControllerRef.current = controller;
     setSubmitting(true);
     setError("");
     try {
-      await createPlace(boardId, request);
-      await reload();
+      await createPlace(boardId, request, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      await reload(controller.signal);
+      if (controller.signal.aborted) return;
       navigate(`/boards/${boardId}`);
     } catch (requestError) {
-      if (!requestError?.isCanceled) setError(errorMessage(requestError));
+      if (controller.signal.aborted || requestError?.isCanceled) return;
+      if (requestError?.status === 401) await reload(controller.signal);
+      if (requestError?.status === 409) await reload(controller.signal);
+      if (!controller.signal.aborted) setError(errorMessage(requestError));
     } finally {
-      setSubmitting(false);
+      if (!controller.signal.aborted) setSubmitting(false);
     }
   };
 
@@ -111,7 +124,7 @@ export function AddPlacePage({ boardId }) {
   const addManual = (external) => {
     const lat = Number(form.lat);
     const lon = Number(form.lon);
-    if (!form.name.trim() || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+    if (!form.name.trim() || !hasPoint({ lat, lon })) {
       setError("장소명과 유효한 좌표를 입력해 주세요.");
       return;
     }
@@ -148,7 +161,7 @@ export function AddPlacePage({ boardId }) {
     {error && <p role="alert" className="mt-3 rounded-xl bg-white p-3 text-sm text-coral">{error}</p>}
     {tab === "search" ? <section className="mt-5">
       <div className="flex gap-2"><input value={query} onChange={(event) => setQuery(event.target.value)} className="flex-1 rounded-xl border border-line bg-white p-3" placeholder="2자 이상 장소·주소 검색" /><Button disabled={searchState === "loading" || submitting} className="!w-auto !py-3" onClick={runSearch}>{searchState === "loading" ? "검색 중" : "검색"}</Button></div>
-      {searchState === "invalid" && <p className="mt-2 text-sm text-coral">검색어는 2~80자로 입력해 주세요.</p>}
+      {searchState === "invalid" && <p className="mt-2 text-sm text-coral">검색어는 2~60자로 입력해 주세요.</p>}
       {searchState === "error" && <div className="mt-4 rounded-xl bg-white p-4">검색에 실패했어요.<Button className="mt-3 !py-3" onClick={runSearch}>다시 시도</Button></div>}
       {searchState === "empty" && <p className="mt-4 rounded-xl bg-white p-4 text-ink-2">검색 결과가 없어요. 외부 지도나 직접 핀으로 추가할 수 있어요.</p>}
       {searchState === "results" && <div className="mt-4 space-y-2">

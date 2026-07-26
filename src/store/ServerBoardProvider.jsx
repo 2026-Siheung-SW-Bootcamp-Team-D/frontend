@@ -6,7 +6,8 @@ import { listPlaces } from "../api/places";
 import { getBoardSession } from "../api/session";
 import { ServerBoardContext } from "./ServerBoardContext";
 
-const EMPTY_DATA = { board: null, participants: [], places: [], invitation: null };
+const EMPTY_PAGE = { number: 1, size: 20, totalItems: 0, totalPages: 0 };
+const EMPTY_DATA = { board: null, participants: [], places: [], placesPage: EMPTY_PAGE, invitation: null };
 
 function decoratePlaces(places, participants) {
   const names = new Map(participants.map((participant) => [participant.participantId, participant.nickname]));
@@ -17,15 +18,28 @@ export function ServerBoardProvider({ boardId, children }) {
   const session = useMemo(() => getBoardSession(boardId), [boardId]);
   const [state, setState] = useState(() => ({ status: session ? "loading" : "reentry", data: EMPTY_DATA, error: null, partialErrors: [] }));
   const activeBoardIdRef = useRef(boardId);
+  const reloadControllerRef = useRef(null);
+  const moreControllerRef = useRef(null);
+  const requestGenerationRef = useRef(0);
 
   useEffect(() => {
     activeBoardIdRef.current = boardId;
   }, [boardId]);
 
-  const reload = useCallback(async (signal) => {
+  const reload = useCallback(async (externalSignal) => {
+    reloadControllerRef.current?.abort();
+    moreControllerRef.current?.abort();
+    const controller = new AbortController();
+    reloadControllerRef.current = controller;
+    const signal = controller.signal;
+    const generation = ++requestGenerationRef.current;
+    const abortFromConsumer = () => controller.abort();
+    if (externalSignal?.aborted) controller.abort();
+    else externalSignal?.addEventListener("abort", abortFromConsumer, { once: true });
     const currentSession = getBoardSession(boardId);
     if (!currentSession) {
       if (activeBoardIdRef.current === boardId) setState({ status: "reentry", data: EMPTY_DATA, error: null, partialErrors: [] });
+      externalSignal?.removeEventListener("abort", abortFromConsumer);
       return;
     }
 
@@ -36,11 +50,12 @@ export function ServerBoardProvider({ boardId, children }) {
     const results = await Promise.allSettled([
       getBoard(boardId, { signal }),
       getParticipants(boardId, { signal }),
-      listPlaces(boardId, { signal }),
+      listPlaces(boardId, { page: 1, size: 20, signal }),
       getBoardInvitation(boardId, { signal }),
     ]);
 
-    if (signal?.aborted || activeBoardIdRef.current !== boardId) return;
+    externalSignal?.removeEventListener("abort", abortFromConsumer);
+    if (signal.aborted || generation !== requestGenerationRef.current || activeBoardIdRef.current !== boardId) return;
     const failures = results.filter((result) => result.status === "rejected").map((result) => result.reason);
     if (failures.some((error) => error?.isCanceled)) return;
     if (failures.some((error) => error?.status === 401)) {
@@ -57,16 +72,52 @@ export function ServerBoardProvider({ boardId, children }) {
     const participants = results[1].status === "fulfilled"
       ? (results[1].value.items ?? []).map((participant) => mapParticipant(participant, currentSession.participantId))
       : [];
-    const places = results[2].status === "fulfilled" ? decoratePlaces(results[2].value, participants) : [];
+    const placesResult = results[2].status === "fulfilled" ? results[2].value : { items: [], page: EMPTY_PAGE };
+    const places = decoratePlaces(placesResult.items, participants);
     const invitation = results[3].status === "fulfilled" ? results[3].value : null;
     const partialErrors = failures.filter((error) => error !== boardResult.reason);
     setState({
       status: partialErrors.length > 0 ? "partial-error" : "ready",
-      data: { board: mapBoard(boardResult.value), participants, places, invitation },
+      data: { board: mapBoard(boardResult.value), participants, places, placesPage: placesResult.page, invitation },
       error: null,
       partialErrors,
     });
   }, [boardId]);
+
+  const loadMorePlaces = useCallback(async (externalSignal) => {
+    const snapshot = state.data;
+    if (snapshot.placesPage.number >= snapshot.placesPage.totalPages) return;
+    moreControllerRef.current?.abort();
+    const controller = new AbortController();
+    moreControllerRef.current = controller;
+    const generation = requestGenerationRef.current;
+    const abortFromConsumer = () => controller.abort();
+    if (externalSignal?.aborted) controller.abort();
+    else externalSignal?.addEventListener("abort", abortFromConsumer, { once: true });
+    try {
+      const response = await listPlaces(boardId, {
+        page: snapshot.placesPage.number + 1,
+        size: snapshot.placesPage.size || 20,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted || generation !== requestGenerationRef.current || activeBoardIdRef.current !== boardId) return;
+      setState((current) => {
+        const seen = new Set(current.data.places.map((place) => place.id));
+        const appended = decoratePlaces(response.items, current.data.participants).filter((place) => !seen.has(place.id));
+        return {
+          ...current,
+          data: { ...current.data, places: [...current.data.places, ...appended], placesPage: response.page },
+        };
+      });
+    } catch (error) {
+      if (!controller.signal.aborted && error?.status === 401) {
+        setState({ status: "reentry", data: EMPTY_DATA, error: null, partialErrors: [] });
+      }
+      throw error;
+    } finally {
+      externalSignal?.removeEventListener("abort", abortFromConsumer);
+    }
+  }, [boardId, state.data]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -80,6 +131,8 @@ export function ServerBoardProvider({ boardId, children }) {
     return () => {
       window.clearTimeout(timer);
       controller.abort();
+      reloadControllerRef.current?.abort();
+      moreControllerRef.current?.abort();
     };
   }, [boardId, reload]);
 
@@ -90,13 +143,17 @@ export function ServerBoardProvider({ boardId, children }) {
     board: state.data.board,
     participants: state.data.participants,
     places: state.data.places,
+    placesPage: state.data.placesPage,
     invitation: state.data.invitation,
     error: state.error,
     partialErrors: state.partialErrors,
     // reload reads the active board ref only when consumers invoke it, never while rendering.
     // eslint-disable-next-line react-hooks/refs
     reload,
-  }), [boardId, session?.participantId, state, reload]);
+    // loadMorePlaces also reads request refs only after a consumer invokes it.
+    // eslint-disable-next-line react-hooks/refs
+    loadMorePlaces,
+  }), [boardId, session?.participantId, state, reload, loadMorePlaces]);
 
   return <ServerBoardContext.Provider value={value}>{children}</ServerBoardContext.Provider>;
 }
