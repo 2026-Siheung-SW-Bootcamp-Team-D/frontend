@@ -4,11 +4,11 @@ import { loadKakaoMaps } from "./loadKakaoMaps";
 const DEFAULT_CENTER = { lat: 37.5665, lon: 126.978 };
 const COMMON_AREA_STYLE = {
   strokeWeight: 2,
-  strokeColor: "#EE6B5D",
+  strokeColor: "#9D174D",
   strokeOpacity: 0.9,
   strokeStyle: "solid",
-  fillColor: "#F6A89E",
-  fillOpacity: 0.35,
+  fillColor: "#9D174D",
+  fillOpacity: 0.28,
   zIndex: 0,
 };
 const SELECTED_MARKER_IMAGE = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='44' height='56' viewBox='0 0 44 56'><circle cx='22' cy='22' r='18' fill='white' stroke='#EE6B5D' stroke-width='5'/><circle cx='22' cy='22' r='7' fill='#EE6B5D'/><path d='M22 55 12 33h20z' fill='#EE6B5D'/></svg>");
@@ -161,7 +161,7 @@ export function KakaoMap({
     circleRefs.current.forEach((circle) => circle.setMap(null));
     circleRefs.current = circles.filter((circle) => isCoordinate(circle) && Number.isFinite(circle.radius)).map((circle) => new kakao.maps.Circle({
       map, center: new kakao.maps.LatLng(circle.lat, circle.lon), radius: circle.radius,
-      strokeWeight: 2, strokeColor: "#EE6B5D", strokeOpacity: 0.8, fillColor: "#F6A89E", fillOpacity: 0.18,
+      strokeWeight: 2, strokeStyle: "dashed", strokeColor: "#6D28D9", strokeOpacity: 0.8, fillColor: "#6D28D9", fillOpacity: 0.1,
     }));
     return () => { circleRefs.current.forEach((circle) => circle.setMap(null)); circleRefs.current = []; };
   }, [circles, status]);
