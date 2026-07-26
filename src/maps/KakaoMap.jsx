@@ -47,6 +47,7 @@ export function KakaoMap({
   center = DEFAULT_CENTER,
   markers = [],
   polygons = [],
+  circles = [],
   selectedMarkerId,
   onMarkerSelect,
   onMapClick,
@@ -58,6 +59,7 @@ export function KakaoMap({
   const sdkRef = useRef(null);
   const markerRefs = useRef([]);
   const polygonRefs = useRef([]);
+  const circleRefs = useRef([]);
   const mountedRef = useRef(false);
   const callbacksRef = useRef({ onMarkerSelect, onMapClick, onIdle });
   const lastIdlePointRef = useRef(null);
@@ -111,6 +113,8 @@ export function KakaoMap({
       markerRefs.current = [];
       polygonRefs.current.forEach((polygon) => polygon.setMap(null));
       polygonRefs.current = [];
+      circleRefs.current.forEach((circle) => circle.setMap(null));
+      circleRefs.current = [];
       mapRef.current = null;
       sdkRef.current = null;
     };
@@ -149,6 +153,18 @@ export function KakaoMap({
       markerRefs.current = [];
     };
   }, [markers, selectedMarkerId, status]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const kakao = sdkRef.current;
+    if (!map || !kakao) return undefined;
+    circleRefs.current.forEach((circle) => circle.setMap(null));
+    circleRefs.current = circles.filter((circle) => isCoordinate(circle) && Number.isFinite(circle.radius)).map((circle) => new kakao.maps.Circle({
+      map, center: new kakao.maps.LatLng(circle.lat, circle.lon), radius: circle.radius,
+      strokeWeight: 2, strokeColor: "#EE6B5D", strokeOpacity: 0.8, fillColor: "#F6A89E", fillOpacity: 0.18,
+    }));
+    return () => { circleRefs.current.forEach((circle) => circle.setMap(null)); circleRefs.current = []; };
+  }, [circles, status]);
 
   useEffect(() => {
     const map = mapRef.current;

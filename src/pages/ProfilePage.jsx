@@ -6,6 +6,7 @@ import { getBoardSession } from "../api/session";
 import { Button } from "../components/UI";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
+import { useToast } from "../hooks/useToast";
 
 function messageFor(error) {
   if (error instanceof ApiError) {
@@ -26,6 +27,7 @@ function originFromParticipant(participant) {
 }
 
 export function ProfilePage({ boardId }) {
+  const toast = useToast();
   const session = useMemo(() => getBoardSession(boardId), [boardId]);
   const [board, setBoard] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -164,6 +166,7 @@ export function ProfilePage({ boardId }) {
       setNickname(response.nickname);
       setChosen(originFromParticipant(response));
       setOriginChanged(false);
+      toast("프로필을 저장했어요");
     } catch (requestError) {
       if (controller.signal.aborted || requestError?.isCanceled) return;
       if (requestError?.status === 401) setSessionLost(true);
@@ -195,7 +198,6 @@ export function ProfilePage({ boardId }) {
     {chosen ? <div className="mt-2 flex items-center justify-between gap-3 text-sm"><p className="text-coral">선택됨: {chosen.label}</p><button type="button" className="text-ink-2 underline" onClick={() => { setChosen(null); setOriginChanged(true); }}>출발지 삭제</button></div> : <p className="mt-2 text-sm text-ink-2">출발지를 선택하면 지역 찾기에 사용할 수 있어요.</p>}
     {error && <p className="mt-3 text-sm text-coral">{error}</p>}
     <Button className="mt-4" disabled={saving} onClick={save}>{saving ? "저장하는 중…" : "프로필 저장"}</Button>
-    <Button variant="line" className="mt-2" onClick={() => navigate(`/boards/${boardId}`)}>보드 지도로 돌아가기</Button>
     <div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{participant.nickname?.[0]}</div><b className="flex-1">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small></div>)}</div>
   </main>;
 }
