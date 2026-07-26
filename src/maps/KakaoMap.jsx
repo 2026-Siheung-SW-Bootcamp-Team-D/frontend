@@ -11,6 +11,7 @@ const COMMON_AREA_STYLE = {
   fillOpacity: 0.35,
   zIndex: 0,
 };
+const SELECTED_MARKER_IMAGE = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='44' height='56' viewBox='0 0 44 56'><circle cx='22' cy='22' r='18' fill='white' stroke='#EE6B5D' stroke-width='5'/><circle cx='22' cy='22' r='7' fill='#EE6B5D'/><path d='M22 55 12 33h20z' fill='#EE6B5D'/></svg>");
 
 function isCoordinate(point) {
   return Number.isFinite(point?.lat) && Number.isFinite(point?.lon);
@@ -131,11 +132,13 @@ export function KakaoMap({
     markerRefs.current = markers
       .filter((marker) => isCoordinate(marker))
       .map((item) => {
+        const selected = item.id === selectedMarkerId;
         const marker = new kakao.maps.Marker({
           map,
           position: new kakao.maps.LatLng(item.lat, item.lon),
           title: item.name,
-          zIndex: item.id === selectedMarkerId ? 2 : 1,
+          image: selected ? new kakao.maps.MarkerImage(SELECTED_MARKER_IMAGE, new kakao.maps.Size(44, 56), { offset: new kakao.maps.Point(22, 56) }) : undefined,
+          zIndex: selected ? 2 : 1,
         });
         kakao.maps.event.addListener(marker, "click", () => callbacksRef.current.onMarkerSelect?.(item));
         return marker;

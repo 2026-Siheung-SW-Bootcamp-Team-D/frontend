@@ -15,6 +15,15 @@ function isSession(value) {
   );
 }
 
+function isOptionalText(value) { return value === undefined || (typeof value === "string" && value.trim().length > 0); }
+function isOptionalTimestamp(value) { return value === undefined || (typeof value === "string" && Number.isFinite(Date.parse(value))); }
+function sessionMetadata(value) {
+  return {
+    ...(isOptionalText(value.boardName) && value.boardName ? { boardName: value.boardName.trim() } : {}),
+    ...(isOptionalTimestamp(value.lastOpenedAt) && value.lastOpenedAt ? { lastOpenedAt: value.lastOpenedAt } : {}),
+  };
+}
+
 function readSessions() {
   if (!canUseStorage()) return {};
 
@@ -29,7 +38,7 @@ function readSessions() {
     }
 
     const validSessions = Object.fromEntries(
-      Object.entries(parsed).filter(([boardId, session]) => boardId.trim() && isSession(session)),
+      Object.entries(parsed).filter(([boardId, session]) => boardId.trim() && isSession(session) && isOptionalText(session.boardName) && isOptionalTimestamp(session.lastOpenedAt)),
     );
 
     if (Object.keys(validSessions).length !== Object.keys(parsed).length) {
@@ -74,6 +83,7 @@ export function saveBoardSession(boardId, session) {
   sessions[boardId] = {
     participantToken: session.participantToken,
     participantId: session.participantId,
+    ...sessionMetadata(session),
   };
   return writeSessions(sessions);
 }
@@ -89,6 +99,20 @@ export function clearBoardSession(boardId) {
 
 export function getBoardSessionIds() {
   return Object.keys(readSessions());
+}
+
+export function touchBoardSession(boardId, { boardName, lastOpenedAt = new Date().toISOString() } = {}) {
+  const sessions = readSessions();
+  const current = sessions[boardId];
+  if (!current) return false;
+  sessions[boardId] = { ...current, ...sessionMetadata({ boardName: boardName ?? current.boardName, lastOpenedAt }) };
+  return writeSessions(sessions);
+}
+
+export function getRecentBoardSessions() {
+  return Object.entries(readSessions())
+    .map(([boardId, session]) => ({ boardId, boardName: session.boardName || "참여한 모임", lastOpenedAt: session.lastOpenedAt || "" }))
+    .sort((left, right) => right.lastOpenedAt.localeCompare(left.lastOpenedAt));
 }
 
 export { STORAGE_KEY };

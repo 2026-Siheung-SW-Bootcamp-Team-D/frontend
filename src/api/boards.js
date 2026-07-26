@@ -20,7 +20,7 @@ function saveCreatedBoardSession(response) {
   if (typeof boardId !== "string" || typeof participantId !== "string" || typeof participantToken !== "string") {
     return false;
   }
-  if (!saveBoardSession(boardId, { participantId, participantToken })) throw storageError();
+  if (!saveBoardSession(boardId, { participantId, participantToken, boardName: response?.board?.name, lastOpenedAt: new Date().toISOString() })) throw storageError();
   return true;
 }
 
@@ -29,7 +29,7 @@ function saveJoinedBoardSession(response) {
   if (typeof boardId !== "string" || typeof participantId !== "string" || typeof participantToken !== "string") {
     return false;
   }
-  if (!saveBoardSession(boardId, { participantId, participantToken })) throw storageError();
+  if (!saveBoardSession(boardId, { participantId, participantToken, lastOpenedAt: new Date().toISOString() })) throw storageError();
   return true;
 }
 

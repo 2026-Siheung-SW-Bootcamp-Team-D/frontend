@@ -20,7 +20,7 @@ function messageFor(error) {
 }
 
 export function BoardPage({ boardId }) {
-  const { status, board, places, placesPage, participants, invitation, error, partialErrors, reload, loadMorePlaces } = useServerBoard();
+  const { status, board, places, placesPage, participants, invitation, areaMapResults, error, partialErrors, reload, loadMorePlaces } = useServerBoard();
   const [focusedId, setFocusedId] = useState(null);
   const [mutationId, setMutationId] = useState("");
   const [message, setMessage] = useState("");
@@ -28,12 +28,18 @@ export function BoardPage({ boardId }) {
   const [editingBoard, setEditingBoard] = useState(false);
   const [boardForm, setBoardForm] = useState({ name: "", purpose: "" });
   const [loadingMore, setLoadingMore] = useState(false);
+  const [areaPanelOpen, setAreaPanelOpen] = useState(false);
+  const [areaVisible, setAreaVisible] = useState(false);
+  const [areaDuration, setAreaDuration] = useState(null);
   const mutationControllerRef = useRef(null);
   const moreControllerRef = useRef(null);
   const toast = useToast();
   const focusedPlace = places.find((place) => place.id === focusedId)
     ?? places.find((place) => place.id === board?.selectedPlaceId)
     ?? places[0];
+  const selectedArea = areaMapResults.find((result) => result.durationMin === areaDuration) ?? areaMapResults[0] ?? null;
+  const selectionActor = participants.find((participant) => participant.id === board?.selectedByParticipantId);
+  const selectionMeta = board?.selectedAt ? `${selectionActor?.nickname ?? "참여자"}님이 ${new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit" }).format(new Date(board.selectedAt))}에 선택` : "";
 
   useEffect(() => () => {
     mutationControllerRef.current?.abort();
@@ -111,9 +117,16 @@ export function BoardPage({ boardId }) {
     {share && <div className="fixed inset-0 z-50 grid place-items-end bg-black/30 sm:place-items-center"><section className="w-full max-w-md rounded-t-3xl bg-white p-5 sm:rounded-3xl"><button type="button" className="float-right" onClick={() => setShare(false)}>✕</button><h2 className="text-xl font-bold">친구 초대하기</h2><p className="mt-3 rounded-xl bg-bg p-3 font-bold">참여 코드 {invitation?.inviteCode ?? "불러오는 중"}</p>{inviteUrl && <p className="mt-2 break-all text-sm text-ink-2">{inviteUrl}</p>}<Button className="mt-4" disabled={!inviteUrl} onClick={() => navigator.clipboard?.writeText(inviteUrl).then(() => toast("초대 링크를 복사했어요"), () => toast("링크를 복사하지 못했어요"))}>초대 링크 복사</Button></section></div>}
     <div className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_420px]">
       <section className="relative min-h-[360px] overflow-hidden bg-[#d7e5df] p-5">
-        <p className="relative z-10 inline-block rounded-full bg-white/90 px-3 py-2 text-sm font-bold shadow">{board?.selectedPlaceId ? `지금 함께 보는 곳 · ${places.find((place) => place.id === board.selectedPlaceId)?.name ?? "장소"}` : "지도에서 장소를 골라보세요"}</p>
-        <KakaoMap className="absolute inset-0" center={focusedPlace ? { lat: focusedPlace.lat, lon: focusedPlace.lon } : undefined} markers={places} selectedMarkerId={focusedId ?? board?.selectedPlaceId} onMarkerSelect={(place) => setFocusedId(place.id)} />
+        <p className="relative z-10 inline-block rounded-full bg-white/90 px-3 py-2 text-sm font-bold shadow">
+          {board?.selectedPlaceId ? <>
+            <span>지금 함께 보는 곳 · {places.find((place) => place.id === board.selectedPlaceId)?.name ?? "장소"}</span>
+            {selectionMeta && <small className="ml-2 text-ink-2">{selectionMeta}</small>}
+          </> : "지도에서 장소를 골라보세요"}
+        </p>
+        <KakaoMap className="absolute inset-0" center={focusedPlace ? { lat: focusedPlace.lat, lon: focusedPlace.lon } : undefined} markers={places} polygons={areaVisible && selectedArea ? [{ id: selectedArea.id, geometry: selectedArea.commonArea }] : []} selectedMarkerId={focusedId ?? board?.selectedPlaceId} onMarkerSelect={(place) => setFocusedId(place.id)} />
         <button type="button" onClick={() => navigate(`/boards/${boardId}/add`)} className="absolute bottom-5 right-5 z-10 rounded-xl bg-coral px-4 py-3 font-bold text-white">＋ 장소 추가</button>
+        <button type="button" onClick={() => setAreaPanelOpen(true)} className="absolute bottom-5 left-5 z-10 rounded-xl bg-white px-4 py-3 font-bold shadow">🧭 공통 영역</button>
+        {areaPanelOpen && <section className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl bg-white p-5 shadow-2xl lg:absolute lg:bottom-5 lg:left-5 lg:right-auto lg:w-80 lg:rounded-2xl"><div className="mb-3 flex items-center justify-between"><b>공통 영역</b><button type="button" onClick={() => setAreaPanelOpen(false)}>✕</button></div>{areaMapResults.length ? <><div className="flex gap-2">{areaMapResults.map((result) => <button key={result.id} type="button" onClick={() => { setAreaDuration(result.durationMin); setAreaVisible(true); }} className={`flex-1 rounded-lg p-2 text-sm font-bold ${(selectedArea?.durationMin === result.durationMin && areaVisible) ? "bg-coral text-white" : "bg-bg"}`}>{result.durationMin}분</button>)}</div><label className="mt-4 flex items-center justify-between text-sm"><span>{selectedArea?.durationMin ?? ""}분 공통 도달 영역 표시</span><input type="checkbox" checked={areaVisible} onChange={(event) => setAreaVisible(event.target.checked)} /></label></> : <><p className="text-sm text-ink-2">아직 지도에 표시할 공통 영역이 없어요.</p><Button className="mt-3 !py-3" onClick={() => navigate(`/boards/${boardId}/area`)}>동네 찾기</Button></>}</section>}
       </section>
       <section className="flex max-h-[calc(100vh-60px)] flex-col bg-white">
         <div className="p-5"><h1 className="text-lg font-bold">가고 싶은 곳 {placesPage.totalItems || board?.counts?.places || 0}곳 <small className="text-ink-3">({places.length}개 표시)</small></h1>{status === "partial-error" && <p className="mt-2 text-sm text-coral">일부 정보를 불러오지 못했어요. <button type="button" className="underline" onClick={() => reload()}>다시 시도</button></p>}{partialErrors.length > 0 && <p className="sr-only">일부 API 요청이 실패했습니다.</p>}{message && <p className="mt-2 text-sm text-coral">{message}</p>}</div>

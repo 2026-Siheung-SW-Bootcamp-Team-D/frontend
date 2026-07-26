@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getBoard, getBoardInvitation, getParticipants } from "../api/boards";
+import { getAreaSearchMapResults } from "../api/areaSearch";
 import { ApiError } from "../api/errors";
 import { mapBoard, mapParticipant } from "../api/mappers";
 import { listPlaces } from "../api/places";
-import { getBoardSession } from "../api/session";
+import { getBoardSession, touchBoardSession } from "../api/session";
 import { ServerBoardContext } from "./ServerBoardContext";
 
 const EMPTY_PAGE = { number: 1, size: 20, totalItems: 0, totalPages: 0 };
-const EMPTY_DATA = { board: null, participants: [], places: [], placesPage: EMPTY_PAGE, invitation: null };
+const EMPTY_DATA = { board: null, participants: [], places: [], placesPage: EMPTY_PAGE, invitation: null, areaMapResults: [] };
 
 function decoratePlaces(places, participants) {
   const names = new Map(participants.map((participant) => [participant.participantId, participant.nickname]));
@@ -52,6 +53,7 @@ export function ServerBoardProvider({ boardId, children }) {
       getParticipants(boardId, { signal }),
       listPlaces(boardId, { page: 1, size: 20, signal }),
       getBoardInvitation(boardId, { signal }),
+      getAreaSearchMapResults(boardId, { signal }),
     ]);
 
     externalSignal?.removeEventListener("abort", abortFromConsumer);
@@ -84,14 +86,20 @@ export function ServerBoardProvider({ boardId, children }) {
       const invitation = results[3].status === "fulfilled"
         ? results[3].value
         : (hasPreviousBoard ? current.data.invitation : null);
+      const areaMapResults = results[4].status === "fulfilled"
+        ? results[4].value.results
+        : (hasPreviousBoard ? current.data.areaMapResults : []);
+      const mappedBoard = mapBoard(boardResult.value);
+      touchBoardSession(boardId, { boardName: mappedBoard.name });
       return {
         status: partialErrors.length > 0 ? "partial-error" : "ready",
         data: {
-          board: mapBoard(boardResult.value),
+          board: mappedBoard,
           participants,
           places: decoratePlaces(placesResult.items, participants),
           placesPage: placesResult.page,
           invitation,
+          areaMapResults,
         },
         error: null,
         partialErrors,
@@ -160,6 +168,7 @@ export function ServerBoardProvider({ boardId, children }) {
     places: state.data.places,
     placesPage: state.data.placesPage,
     invitation: state.data.invitation,
+    areaMapResults: state.data.areaMapResults,
     error: state.error,
     partialErrors: state.partialErrors,
     // reload reads the active board ref only when consumers invoke it, never while rendering.

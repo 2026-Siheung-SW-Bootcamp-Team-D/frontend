@@ -34,7 +34,7 @@ function mapPolygonCoordinates(value) {
   return polygon.every(Boolean) ? polygon : null;
 }
 
-function mapGeoJsonGeometry(value) {
+export function mapGeoJsonGeometry(value) {
   if (value?.type === "Polygon") {
     const coordinates = mapPolygonCoordinates(value.coordinates);
     return coordinates ? { type: "Polygon", coordinates } : null;
@@ -51,6 +51,7 @@ export function mapBoard(value) {
     id: text(value?.boardId),
     name: text(value?.name),
     purpose: text(value?.purpose),
+    updatedAt: value?.updatedAt ?? null,
     status: text(value?.status),
     selectedPlaceId: value?.selectedPlaceId ?? null,
     selectedByParticipantId: value?.selectedByParticipantId ?? null,

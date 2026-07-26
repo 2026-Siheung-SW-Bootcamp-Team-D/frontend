@@ -1,5 +1,5 @@
 import { boardRequestConfig, getApiClient } from "./client";
-import { mapAreaSearchJob } from "./mappers";
+import { mapAreaSearchJob, mapGeoJsonGeometry } from "./mappers";
 
 function jobPath(boardId, jobId = "") {
   const board = encodeURIComponent(boardId);
@@ -14,4 +14,17 @@ export async function createAreaSearchJob(boardId, durationMin, { signal } = {})
 export async function getAreaSearchJob(boardId, jobId, { signal } = {}) {
   const response = await getApiClient().get(jobPath(boardId, jobId), boardRequestConfig(boardId, signal));
   return mapAreaSearchJob(response.data);
+}
+
+export async function getAreaSearchMapResults(boardId, { signal } = {}) {
+  const response = await getApiClient().get(`/boards/${encodeURIComponent(boardId)}/area-search-results`, boardRequestConfig(boardId, signal));
+  return {
+    results: (Array.isArray(response.data?.results) ? response.data.results : []).map((result) => ({
+      id: typeof result?.jobId === "string" ? result.jobId : "",
+      durationMin: Number.isFinite(result?.durationMin) ? result.durationMin : null,
+      finishedAt: result?.finishedAt ?? null,
+      participantCenter: Number.isFinite(result?.participantCenter?.lat) && Number.isFinite(result?.participantCenter?.lon) ? result.participantCenter : null,
+      commonArea: mapGeoJsonGeometry(result?.commonArea),
+    })).filter((result) => result.durationMin && result.commonArea),
+  };
 }
