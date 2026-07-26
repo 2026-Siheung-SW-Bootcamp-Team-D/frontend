@@ -29,7 +29,8 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
 
   async function search(event) {
     event.preventDefault();
-    const value = query.trim(); if (value.length < 2 || value.length > 60) return setError("검색어는 2~60자로 입력해 주세요.");
+    const value = query.trim();
+    if (!category && (value.length < 2 || value.length > 60)) return setError("검색어는 2~60자로 입력해 주세요.");
     const controller = new AbortController(); controllerRef.current?.abort(); controllerRef.current = controller;
     setBusy(true); setError("");
     try {
