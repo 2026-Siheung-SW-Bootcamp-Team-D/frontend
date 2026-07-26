@@ -69,18 +69,33 @@ export function ServerBoardProvider({ boardId, children }) {
       return;
     }
 
-    const participants = results[1].status === "fulfilled"
-      ? (results[1].value.items ?? []).map((participant) => mapParticipant(participant, currentSession.participantId))
-      : [];
-    const placesResult = results[2].status === "fulfilled" ? results[2].value : { items: [], page: EMPTY_PAGE };
-    const places = decoratePlaces(placesResult.items, participants);
-    const invitation = results[3].status === "fulfilled" ? results[3].value : null;
     const partialErrors = failures.filter((error) => error !== boardResult.reason);
-    setState({
-      status: partialErrors.length > 0 ? "partial-error" : "ready",
-      data: { board: mapBoard(boardResult.value), participants, places, placesPage: placesResult.page, invitation },
-      error: null,
-      partialErrors,
+    setState((current) => {
+      const hasPreviousBoard = current.data.board !== null;
+      const participants = results[1].status === "fulfilled"
+        ? (results[1].value.items ?? []).map((participant) => mapParticipant(participant, currentSession.participantId))
+        : (hasPreviousBoard ? current.data.participants : []);
+      const placesResult = results[2].status === "fulfilled"
+        ? results[2].value
+        : {
+            items: hasPreviousBoard ? current.data.places : [],
+            page: hasPreviousBoard ? current.data.placesPage : EMPTY_PAGE,
+          };
+      const invitation = results[3].status === "fulfilled"
+        ? results[3].value
+        : (hasPreviousBoard ? current.data.invitation : null);
+      return {
+        status: partialErrors.length > 0 ? "partial-error" : "ready",
+        data: {
+          board: mapBoard(boardResult.value),
+          participants,
+          places: decoratePlaces(placesResult.items, participants),
+          placesPage: placesResult.page,
+          invitation,
+        },
+        error: null,
+        partialErrors,
+      };
     });
   }, [boardId]);
 

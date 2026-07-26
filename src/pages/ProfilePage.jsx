@@ -110,6 +110,7 @@ export function ProfilePage({ boardId }) {
 
   function chooseSearchOrigin(origin) {
     searchControllerRef.current?.abort();
+    reverseControllerRef.current?.abort();
     setChosen({ ...origin, source: "KAKAO_ADDRESS" });
     setOriginChanged(true);
     setQuery("");
@@ -140,8 +141,11 @@ export function ProfilePage({ boardId }) {
   }
 
   async function save() {
+    if (saving) return;
     const nextNickname = nickname.trim();
     if (nextNickname.length < 1 || nextNickname.length > 20) return setError("닉네임은 1~20자로 입력해 주세요.");
+    searchControllerRef.current?.abort();
+    reverseControllerRef.current?.abort();
     saveControllerRef.current?.abort();
     const controller = new AbortController();
     saveControllerRef.current = controller;

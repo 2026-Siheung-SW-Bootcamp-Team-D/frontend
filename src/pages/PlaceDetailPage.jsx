@@ -30,6 +30,7 @@ export function PlaceDetailPage({ boardId, placeId }) {
   const loadControllerRef = useRef(null);
   const mutationControllerRef = useRef(null);
   const loadGenerationRef = useRef(0);
+  const canLoad = boardStatus !== "reentry";
 
   const load = useCallback(async ({ externalSignal } = {}) => {
     loadControllerRef.current?.abort();
@@ -88,14 +89,17 @@ export function PlaceDetailPage({ boardId, placeId }) {
   };
 
   useEffect(() => {
-    if (boardStatus === "reentry") return undefined;
+    if (!canLoad) return undefined;
     const timer = window.setTimeout(() => { load(); }, 0);
     return () => {
       window.clearTimeout(timer);
       loadControllerRef.current?.abort();
-      mutationControllerRef.current?.abort();
     };
-  }, [boardStatus, load]);
+  }, [canLoad, load]);
+
+  useEffect(() => () => {
+    mutationControllerRef.current?.abort();
+  }, [boardId, placeId]);
 
   const mutate = async (operation, { navigateAfter = false } = {}) => {
     if (mutating) return;
