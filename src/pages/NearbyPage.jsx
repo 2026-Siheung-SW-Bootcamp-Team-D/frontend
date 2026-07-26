@@ -40,6 +40,7 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("");
   const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(initialPoint ? "" : (initialLat != null || initialLon != null ? "잘못된 좌표라 기본 위치에서 탐색해요." : ""));
   const [addingId, setAddingId] = useState("");
@@ -75,6 +76,7 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
       const found = await searchNearbyPlaces(boardId, { ...searchPoint, q: q || undefined, category: categoryValue === "ACTIVITY" ? undefined : categoryValue || undefined, theme: categoryValue === "ACTIVITY" ? "ACTIVITY" : undefined }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
       setItems(found);
+      setSelectedItem(found[0] ?? null);
       setStatus(found.length ? "results" : "empty");
     } catch (requestError) {
       if (!controller.signal.aborted && !requestError?.isCanceled) {
@@ -91,6 +93,7 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
     searchGenerationRef.current += 1;
     setPoint(nextPoint);
     setItems([]);
+    setSelectedItem(null);
     setStatus("idle");
     setError("");
   }
@@ -128,5 +131,30 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
   if (boardStatus === "loading") return <main className="min-h-screen p-5">모임 정보를 불러오는 중이에요.</main>;
   if (boardStatus === "error") return <main className="min-h-screen p-5">모임을 열지 못했어요. <button type="button" className="underline" onClick={() => navigate(`/boards/${boardId}`)}>모임으로 돌아가기</button></main>;
 
-  return <main className="min-h-screen bg-bg"><section className="relative h-72 overflow-hidden bg-[#d7e5df]"><KakaoMap className="h-full w-full" center={point} onMapClick={changePoint} onIdle={changePoint} /><button type="button" onClick={() => navigate(`/boards/${boardId}/area`)} className="absolute left-4 top-4 z-10 rounded-xl bg-white p-3">←</button><p className="absolute bottom-3 left-3 z-10 rounded-full bg-white px-3 py-2 text-xs font-bold">탐색 반경 1km · 지도 어디든 눌러 이동</p></section><section className="p-4"><h1 className="font-bold">선택한 좌표 주변 탐색</h1><p className="text-xs text-ink-2">{point.lat.toFixed(4)}, {point.lon.toFixed(4)}</p><div className="mt-3 flex gap-2"><input value={keyword} onChange={(event) => { setKeyword(event.target.value); if (category) setCategory(""); }} className="flex-1 rounded-xl border border-line bg-white p-3" placeholder="2자 이상 키워드" /><button type="button" disabled={status === "loading"} onClick={() => search({ query: keyword, categoryValue: "" })} className="rounded-xl bg-navy px-4 font-bold text-white disabled:opacity-50">{status === "loading" ? "검색 중" : "검색"}</button></div><div className="mt-3 flex flex-wrap gap-2">{CATEGORIES.map(([value, label]) => <button key={value} type="button" disabled={status === "loading"} onClick={() => { setCategory(value); setKeyword(""); search({ query: "", categoryValue: value }); }} className={`rounded-full border px-3 py-2 text-sm ${category === value ? "border-coral bg-coral-soft" : "border-line bg-white"}`}>{label}</button>)}</div>{error && <p className="mt-4 rounded-xl bg-white p-4 text-coral">{error}</p>}{status === "empty" && <p className="mt-4 rounded-xl bg-white p-4 text-ink-2">결과가 없어요. 다른 위치나 검색어를 써 보세요.</p>}{status === "results" && <div className="mt-4 space-y-2">{items.map((item) => <div key={item.providerPlaceId || `${item.name}-${item.lat}-${item.lon}`} className="flex items-center gap-3 rounded-xl bg-white p-3"><span>📍</span><span className="flex-1"><b className="block">{item.name}</b><small className="text-ink-2">{item.category}</small></span><button type="button" disabled={Boolean(addingId)} onClick={() => add({ ...item })} className="rounded-lg bg-coral px-3 py-2 text-sm font-bold text-white disabled:opacity-50">{addingId === (item.providerPlaceId || item.name) ? "추가 중" : "추가"}</button></div>)}</div>}</section></main>;
+  const mapMarkers = items.map((item, index) => ({ ...item, id: item.providerPlaceId || `nearby-${index}` }));
+  const selectedId = selectedItem?.providerPlaceId || (selectedItem ? `nearby-${items.indexOf(selectedItem)}` : null);
+  return <main className="relative h-screen overflow-hidden bg-[#d7e5df]">
+    <KakaoMap className="absolute inset-0" center={selectedItem ?? point} markers={mapMarkers} selectedMarkerId={selectedId} onMarkerSelect={setSelectedItem} onMapClick={changePoint} />
+    <button type="button" onClick={() => navigate(`/boards/${boardId}`)} className="absolute left-4 top-4 z-20 rounded-xl bg-white p-3 shadow">← 모임</button>
+    <p className="absolute right-4 top-4 z-20 rounded-full bg-white/95 px-3 py-2 text-xs font-bold shadow">지도를 눌러 검색 기준 변경</p>
+    <section className="absolute inset-x-0 bottom-0 z-20 flex max-h-[48vh] flex-col rounded-t-3xl bg-white shadow-2xl lg:left-auto lg:right-5 lg:bottom-5 lg:w-[420px] lg:rounded-3xl">
+      <div className="border-b border-line px-4 pb-3 pt-4">
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line lg:hidden" />
+        <h1 className="font-bold">선택한 위치 주변 탐색</h1>
+        <p className="text-xs text-ink-2">{point.lat.toFixed(4)}, {point.lon.toFixed(4)}</p>
+        <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); search({ query: keyword, categoryValue: "" }); }}>
+          <input value={keyword} onChange={(event) => { setKeyword(event.target.value); if (category) setCategory(""); }} className="min-w-0 flex-1 rounded-xl border border-line bg-white p-3" placeholder="2자 이상 키워드" />
+          <button type="submit" disabled={status === "loading"} className="rounded-xl bg-navy px-4 font-bold text-white disabled:opacity-50">{status === "loading" ? "검색 중" : "검색"}</button>
+        </form>
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">{CATEGORIES.map(([value, label]) => <button key={value} type="button" disabled={status === "loading"} onClick={() => { setCategory(value); setKeyword(""); search({ query: "", categoryValue: value }); }} className={`shrink-0 rounded-full border px-3 py-2 text-sm ${category === value ? "border-coral bg-coral-soft" : "border-line bg-white"}`}>{label}</button>)}</div>
+        {error && <p className="mt-3 text-sm text-coral">{error}</p>}
+        {status === "empty" && <p className="mt-3 text-sm text-ink-2">결과가 없어요. 다른 위치나 검색어를 써 보세요.</p>}
+      </div>
+      {status === "results" && <div className="min-h-0 flex-1 overflow-y-auto p-4">{items.map((item, index) => {
+        const itemId = item.providerPlaceId || `nearby-${index}`;
+        return <button key={itemId} type="button" onClick={() => setSelectedItem(item)} className={`mb-2 flex w-full items-center gap-3 rounded-xl border p-3 text-left ${selectedId === itemId ? "border-coral bg-coral-soft" : "border-line"}`}><span>📍</span><span className="min-w-0 flex-1"><b className="block truncate">{item.name}</b><small className="block truncate text-ink-2">{item.category}</small></span></button>;
+      })}</div>}
+      {selectedItem && <div className="border-t border-line p-4"><button type="button" disabled={Boolean(addingId)} onClick={() => add(selectedItem)} className="w-full rounded-xl bg-coral px-4 py-3 font-bold text-white disabled:opacity-50">{addingId === (selectedItem.providerPlaceId || selectedItem.name) ? "추가 중…" : `“${selectedItem.name}” 모임 장소에 추가`}</button></div>}
+    </section>
+  </main>;
 }

@@ -11,8 +11,15 @@ const EMPTY_PAGE = { number: 1, size: 20, totalItems: 0, totalPages: 0 };
 const EMPTY_DATA = { board: null, participants: [], places: [], placesPage: EMPTY_PAGE, invitation: null, areaMapResults: [] };
 
 function decoratePlaces(places, participants) {
-  const names = new Map(participants.map((participant) => [participant.participantId, participant.nickname]));
-  return places.map((place) => ({ ...place, proposerName: names.get(place.proposerId) ?? "참여자" }));
+  const participantById = new Map(participants.map((participant) => [participant.participantId, participant]));
+  return places.map((place) => {
+    const proposer = participantById.get(place.proposerId);
+    return {
+      ...place,
+      proposerName: proposer?.nickname ?? "참여자",
+      proposerAvatarColor: proposer?.avatarColor ?? "#6B7280",
+    };
+  });
 }
 
 export function ServerBoardProvider({ boardId, children }) {

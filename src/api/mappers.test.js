@@ -43,3 +43,34 @@ test("출발지 후보는 장소를 먼저 보여주고 같은 좌표의 주소�
     providerPlaceId: null,
   }]);
 });
+
+test("지역 탐색 응답은 참여자별 도달권과 공통 영역을 함께 보존한다", () => {
+  const mapped = mappers.mapAreaSearchJob({
+    job: { jobId: "area-1", status: "SUCCEEDED", durationMin: 45 },
+    result: {
+      participantCenter: { lat: 37.5, lon: 127 },
+      isochrones: [{
+        areaId: "area-1",
+        geometry: {
+          type: "Polygon",
+          coordinates: [[[127, 37.5], [127.1, 37.5], [127.1, 37.6], [127, 37.5]]],
+        },
+      }],
+      commonArea: {
+        type: "Polygon",
+        coordinates: [[[127.01, 37.51], [127.02, 37.51], [127.02, 37.52], [127.01, 37.51]]],
+      },
+      anchors: [{
+        anchorId: "anchor-1",
+        provider: "KAKAO",
+        providerPlaceId: "place-1",
+        name: "만남역",
+        location: { lat: 37.51, lon: 127.01 },
+      }],
+    },
+  });
+
+  assert.equal(mapped.isochrones.length, 1);
+  assert.equal(mapped.commonArea.type, "Polygon");
+  assert.equal(mapped.anchors[0].providerPlaceId, "place-1");
+});

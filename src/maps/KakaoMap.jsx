@@ -48,6 +48,7 @@ export function KakaoMap({
   markers = [],
   polygons = [],
   circles = [],
+  fitBounds = false,
   selectedMarkerId,
   onMarkerSelect,
   onMapClick,
@@ -187,6 +188,27 @@ export function KakaoMap({
       polygonRefs.current = [];
     };
   }, [polygons, status]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const kakao = sdkRef.current;
+    if (!fitBounds || !map || !kakao) return;
+    const points = markers.filter(isCoordinate).map((marker) => [marker.lon, marker.lat]);
+    polygons.forEach((item) => {
+      toPolygonCoordinates(item?.geometry).forEach((polygon) => {
+        polygon.forEach((ring) => {
+          ring.forEach((position) => {
+            const [lon, lat] = position ?? [];
+            if (Number.isFinite(lon) && Number.isFinite(lat)) points.push([lon, lat]);
+          });
+        });
+      });
+    });
+    if (points.length === 0) return;
+    const bounds = new kakao.maps.LatLngBounds();
+    points.forEach(([lon, lat]) => bounds.extend(new kakao.maps.LatLng(lat, lon)));
+    map.setBounds(bounds, 80, 40, 220, 40);
+  }, [fitBounds, markers, polygons, status]);
 
   if (status === "unavailable") {
     return <div className={`${className} flex items-center justify-center bg-[#d7e5df] p-5 text-center text-sm text-ink-2`}>지도 사용 불가</div>;

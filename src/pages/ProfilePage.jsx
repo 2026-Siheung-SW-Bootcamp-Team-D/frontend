@@ -152,6 +152,7 @@ export function ProfilePage({ boardId }) {
     const controller = new AbortController();
     saveControllerRef.current = controller;
     const patch = { nickname: nextNickname };
+    const returnToMapAfterSave = originChanged && Boolean(chosen);
     if (originChanged) {
       patch.origin = chosen
         ? { label: chosen.label, lon: chosen.lon, lat: chosen.lat, source: chosen.source, providerPlaceId: chosen.providerPlaceId || null }
@@ -167,6 +168,7 @@ export function ProfilePage({ boardId }) {
       setChosen(originFromParticipant(response));
       setOriginChanged(false);
       toast("프로필을 저장했어요");
+      if (returnToMapAfterSave) navigate(`/boards/${boardId}`);
     } catch (requestError) {
       if (controller.signal.aborted || requestError?.isCanceled) return;
       if (requestError?.status === 401) setSessionLost(true);
@@ -187,10 +189,10 @@ export function ProfilePage({ boardId }) {
     <label className="mt-5 block font-bold">내 닉네임</label>
     <input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength="20" className="mt-2 w-full rounded-xl border border-line bg-white p-3" />
     <label className="mt-5 block font-bold">내 출발지</label>
-    <div className="mt-2 flex gap-2">
+    <form className="mt-2 flex gap-2" onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
       <input value={query} onChange={(event) => changeQuery(event.target.value)} maxLength="60" className="min-w-0 flex-1 rounded-xl border border-line bg-white p-3" placeholder="역·건물·주소 검색" />
-      <Button className="!w-auto !py-3" disabled={searchState === "loading"} onClick={runSearch}>{searchState === "loading" ? "검색 중" : "검색"}</Button>
-    </div>
+      <Button type="submit" className="!w-auto !py-3" disabled={searchState === "loading"}>{searchState === "loading" ? "검색 중" : "검색"}</Button>
+    </form>
     {searchState === "invalid" && <p className="mt-2 text-sm text-coral">검색어는 2~60자로 입력해 주세요.</p>}
     {searchState === "empty" && <p className="mt-2 rounded-xl bg-white p-3 text-sm text-ink-2">검색 결과가 없어요. 지도에서 직접 선택할 수 있어요.</p>}
     {results.map((item) => <button key={`${item.label}-${item.lat}-${item.lon}`} type="button" onClick={() => chooseSearchOrigin(item)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-left"><b>{item.label}</b><small className="ml-2 text-ink-2">{item.roadAddress || "좌표 확인됨"}</small></button>)}
@@ -198,6 +200,6 @@ export function ProfilePage({ boardId }) {
     {chosen ? <div className="mt-2 flex items-center justify-between gap-3 text-sm"><p className="text-coral">선택됨: {chosen.label}</p><button type="button" className="text-ink-2 underline" onClick={() => { setChosen(null); setOriginChanged(true); }}>출발지 삭제</button></div> : <p className="mt-2 text-sm text-ink-2">출발지를 선택하면 지역 찾기에 사용할 수 있어요.</p>}
     {error && <p className="mt-3 text-sm text-coral">{error}</p>}
     <Button className="mt-4" disabled={saving} onClick={save}>{saving ? "저장하는 중…" : "프로필 저장"}</Button>
-    <div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{participant.nickname?.[0]}</div><b className="flex-1">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small></div>)}</div>
+    <div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: participant.avatarColor }}>{participant.nickname?.[0]}</div><b className="flex-1">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small></div>)}</div>
   </main>;
 }

@@ -56,7 +56,7 @@ export function CreateBoardPage() {
             <Button variant="navy" className="mt-2" onClick={() => navigate(`/boards/${boardId}/profile`)}>출발지 설정하기</Button>
           </div>
         ) : (
-          <>
+          <form onSubmit={(event) => { event.preventDefault(); submit(); }}>
             <h1 className="mt-8 text-2xl font-bold">새 모임 만들기</h1>
             <p className="mt-2 text-ink-2">친구들과 가고 싶은 곳을 모아보세요.</p>
             <label className="mt-6 block font-bold">모임 이름</label>
@@ -66,8 +66,8 @@ export function CreateBoardPage() {
             <label className="mt-4 block font-bold">내 닉네임</label>
             <input value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength="20" className="mt-2 w-full rounded-xl border border-line bg-white p-4" placeholder="모임에서 쓸 이름" />
             {error && <p className="mt-3 text-sm text-coral">{error}</p>}
-            <Button className="mt-6" disabled={submitting} onClick={submit}>{submitting ? "모임을 만드는 중…" : "모임 만들기"}</Button>
-          </>
+            <Button type="submit" className="mt-6" disabled={submitting}>{submitting ? "모임을 만드는 중…" : "모임 만들기"}</Button>
+          </form>
         )}
       </div>
     </div>

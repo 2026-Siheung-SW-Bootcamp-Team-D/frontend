@@ -178,6 +178,7 @@ export function mergeOriginCandidates(placeCandidates, addressCandidates) {
 
 export function mapAreaSearchJob(value) {
   const anchors = Array.isArray(value?.result?.anchors) ? value.result.anchors : [];
+  const isochrones = Array.isArray(value?.result?.isochrones) ? value.result.isochrones : [];
   const participantCenter = value?.result?.participantCenter;
   return {
     job: {
@@ -194,7 +195,13 @@ export function mapAreaSearchJob(value) {
       lat: number(anchor?.location?.lat),
       lon: number(anchor?.location?.lon),
       rank: number(anchor?.rank),
+      providerPlaceId: text(anchor?.providerPlaceId),
+      sourceProvider: text(anchor?.provider, "KAKAO"),
     })).filter((anchor) => anchor.lat !== null && anchor.lon !== null),
+    isochrones: isochrones.map((area) => ({
+      id: text(area?.areaId),
+      geometry: mapGeoJsonGeometry(area?.geometry),
+    })).filter((area) => area.geometry),
     participantCenter: {
       lat: number(participantCenter?.lat),
       lon: number(participantCenter?.lon),

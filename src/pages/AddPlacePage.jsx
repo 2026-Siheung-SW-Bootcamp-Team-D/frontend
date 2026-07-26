@@ -160,7 +160,7 @@ export function AddPlacePage({ boardId }) {
     </div>
     {error && <p role="alert" className="mt-3 rounded-xl bg-white p-3 text-sm text-coral">{error}</p>}
     {tab === "search" ? <section className="mt-5">
-      <div className="flex gap-2"><input value={query} onChange={(event) => setQuery(event.target.value)} className="flex-1 rounded-xl border border-line bg-white p-3" placeholder="2자 이상 장소·주소 검색" /><Button disabled={searchState === "loading" || submitting} className="!w-auto !py-3" onClick={runSearch}>{searchState === "loading" ? "검색 중" : "검색"}</Button></div>
+      <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); runSearch(); }}><input value={query} onChange={(event) => setQuery(event.target.value)} className="flex-1 rounded-xl border border-line bg-white p-3" placeholder="2자 이상 장소·주소 검색" /><Button type="submit" disabled={searchState === "loading" || submitting} className="!w-auto !py-3">{searchState === "loading" ? "검색 중" : "검색"}</Button></form>
       {searchState === "invalid" && <p className="mt-2 text-sm text-coral">검색어는 2~60자로 입력해 주세요.</p>}
       {searchState === "error" && <div className="mt-4 rounded-xl bg-white p-4">검색에 실패했어요.<Button className="mt-3 !py-3" onClick={runSearch}>다시 시도</Button></div>}
       {searchState === "empty" && <p className="mt-4 rounded-xl bg-white p-4 text-ink-2">검색 결과가 없어요. 외부 지도나 직접 핀으로 추가할 수 있어요.</p>}
