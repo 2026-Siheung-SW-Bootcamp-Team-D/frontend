@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getBoard, getParticipants, patchMyParticipant } from "../api/boards";
 import { ApiError } from "../api/errors";
-import { reverseGeocode, searchAddresses } from "../api/places";
+import { reverseGeocode, searchOriginCandidates } from "../api/places";
 import { getBoardSession } from "../api/session";
 import { Button } from "../components/UI";
 import { KakaoMap } from "../maps/KakaoMap";
@@ -89,7 +89,7 @@ export function ProfilePage({ boardId }) {
     setSearchState("loading");
     setError("");
     try {
-      const nextResults = await searchAddresses(boardId, term, { signal: controller.signal });
+      const nextResults = await searchOriginCandidates(boardId, term, { signal: controller.signal });
       if (controller.signal.aborted) return;
       setResults(nextResults);
       setSearchState(nextResults.length ? "results" : "empty");
@@ -111,7 +111,7 @@ export function ProfilePage({ boardId }) {
   function chooseSearchOrigin(origin) {
     searchControllerRef.current?.abort();
     reverseControllerRef.current?.abort();
-    setChosen({ ...origin, source: "KAKAO_ADDRESS" });
+    setChosen({ ...origin, source: origin.source || "KAKAO_ADDRESS" });
     setOriginChanged(true);
     setQuery("");
     setResults([]);

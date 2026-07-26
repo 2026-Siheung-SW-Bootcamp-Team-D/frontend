@@ -1,5 +1,5 @@
 import { boardRequestConfig, getApiClient } from "./client";
-import { mapAddressCandidate, mapPlace, mapSearchCandidate } from "./mappers";
+import { mapAddressCandidate, mapPlace, mapSearchCandidate, mergeOriginCandidates } from "./mappers";
 
 function pathWithQuery(path, values) {
   const query = new URLSearchParams();
@@ -62,6 +62,14 @@ export async function searchNearbyPlaces(boardId, { lat, lon, q, category, radiu
 export async function searchAddresses(boardId, query, { signal } = {}) {
   const response = await getApiClient().get(pathWithQuery(`/boards/${encodeURIComponent(boardId)}/search/addresses`, { q: query }), boardRequestConfig(boardId, signal));
   return (response.data?.items ?? []).map(mapAddressCandidate);
+}
+
+export async function searchOriginCandidates(boardId, query, { signal } = {}) {
+  const [places, addresses] = await Promise.all([
+    searchPlaces(boardId, query, {}, { signal }),
+    searchAddresses(boardId, query, { signal }),
+  ]);
+  return mergeOriginCandidates(places, addresses);
 }
 
 export async function reverseGeocode(boardId, point, { signal } = {}) {

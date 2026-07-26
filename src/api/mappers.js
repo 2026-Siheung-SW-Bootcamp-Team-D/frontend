@@ -113,6 +113,36 @@ export function mapAddressCandidate(value) {
   };
 }
 
+export function mergeOriginCandidates(placeCandidates, addressCandidates) {
+  const seenLocations = new Set();
+  const merged = [
+    ...(placeCandidates ?? []).map((candidate) => ({
+      label: candidate.name,
+      roadAddress: candidate.roadAddress || candidate.jibunAddress || "",
+      lat: candidate.lat,
+      lon: candidate.lon,
+      source: "KAKAO_KEYWORD",
+      providerPlaceId: candidate.providerPlaceId || null,
+    })),
+    ...(addressCandidates ?? []).map((candidate) => ({
+      label: candidate.label,
+      roadAddress: candidate.roadAddress || "",
+      lat: candidate.lat,
+      lon: candidate.lon,
+      source: "KAKAO_ADDRESS",
+      providerPlaceId: null,
+    })),
+  ];
+
+  return merged.filter((candidate) => {
+    if (!Number.isFinite(candidate.lat) || !Number.isFinite(candidate.lon)) return false;
+    const locationKey = `${candidate.lat.toFixed(6)}:${candidate.lon.toFixed(6)}`;
+    if (seenLocations.has(locationKey)) return false;
+    seenLocations.add(locationKey);
+    return true;
+  });
+}
+
 export function mapAreaSearchJob(value) {
   const anchors = Array.isArray(value?.result?.anchors) ? value.result.anchors : [];
   return {
