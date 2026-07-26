@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createAreaSearchJob, getAreaSearchJob } from "../api/areaSearch";
 import { ApiError } from "../api/errors";
 import { Avatar, Button } from "../components/UI";
+import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 import { useServerBoard } from "../store/ServerBoardContext";
 
@@ -24,6 +25,8 @@ export function AreaSearchPage({ boardId }) {
   const [duration, setDuration] = useState(45);
   const [job, setJob] = useState(null);
   const [anchors, setAnchors] = useState([]);
+  const [commonArea, setCommonArea] = useState(null);
+  const [participantCenter, setParticipantCenter] = useState(null);
   const [error, setError] = useState("");
   const controllerRef = useRef(null);
   const timerRef = useRef(null);
@@ -36,6 +39,16 @@ export function AreaSearchPage({ boardId }) {
   }
 
   useEffect(() => () => stopPolling(), []);
+
+  function setResult(response) {
+    setAnchors(response.anchors);
+    setCommonArea(response.commonArea);
+    setParticipantCenter(
+      Number.isFinite(response.participantCenter?.lat) && Number.isFinite(response.participantCenter?.lon)
+        ? response.participantCenter
+        : response.anchors[0] ?? null,
+    );
+  }
 
   async function poll(jobId, attempt = 0) {
     if (attempt >= MAX_POLLS) {
@@ -51,7 +64,7 @@ export function AreaSearchPage({ boardId }) {
       if (controller.signal.aborted) return;
       setJob(response.job);
       if (response.job.status === "SUCCEEDED") {
-        setAnchors(response.anchors);
+        setResult(response);
         stopPolling();
       } else if (response.job.status === "FAILED") {
         setError("동네를 찾지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -75,14 +88,15 @@ export function AreaSearchPage({ boardId }) {
     stopPolling();
     setError("");
     setAnchors([]);
+    setCommonArea(null);
+    setParticipantCenter(null);
     const controller = new AbortController();
     controllerRef.current = controller;
     try {
       const response = await createAreaSearchJob(boardId, duration, { signal: controller.signal });
       if (controller.signal.aborted) return;
       setJob(response.job);
-      if (response.job.status === "SUCCEEDED") setAnchors(response.anchors);
-      else if (ACTIVE_STATUSES.has(response.job.status)) poll(response.job.id);
+      if (response.job.status === "SUCCEEDED" || ACTIVE_STATUSES.has(response.job.status)) poll(response.job.id);
       else setError("탐색 작업을 시작하지 못했어요. 다시 시도해 주세요.");
     } catch (requestError) {
       if (!controller.signal.aborted && !requestError?.isCanceled) {
@@ -105,7 +119,7 @@ export function AreaSearchPage({ boardId }) {
         <div className="mb-4 space-y-2">{participants.map((participant) => <div key={participant.id} className="flex items-center gap-2.5 rounded-[13px] border border-line bg-white px-3.5 py-2.5"><Avatar label={participant.nickname} /><b className="flex-1 text-[13.5px]">{participant.nickname}</b><span className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ${participant.hasOrigin ? "bg-coral-soft text-coral" : "bg-[#f0efe9] text-ink-3"}`}>{participant.hasOrigin ? "출발지 등록됨" : "아직 안 함"}</span></div>)}</div>
         <div className="mb-5 flex gap-2">{[30, 45, 60].map((minutes) => <button key={minutes} type="button" disabled={running} className={`flex-1 rounded-[12px] border border-line py-3.5 text-[14px] font-bold ${duration === minutes ? "border-coral bg-coral text-white" : "bg-white text-ink-2"}`} onClick={() => setDuration(minutes)}>{minutes}분</button>)}</div>
         {error && <p className="mb-3 rounded-xl bg-white p-3 text-sm text-coral">{error}{error.includes("출발지") && <button type="button" className="ml-2 underline" onClick={() => navigate(`/boards/${boardId}/profile`)}>참여자 정보</button>}</p>}
-        {running ? <section className="py-8 text-center"><div className="mx-auto mb-5 h-[66px] w-[66px] animate-spin rounded-full border-[6px] border-coral-soft border-t-coral" /><b className="block">만날 만한 지역을 찾고 있어요</b><p className="mt-1 text-xs text-ink-3">{job.status === "RETRY_WAIT" ? "외부 검색을 다시 시도하고 있어요" : "도달 영역을 계산하고 있어요"}</p><button type="button" className="mt-6 text-sm font-bold text-coral" onClick={() => { stopPolling(); setJob(null); }}>취소</button></section> : <Button onClick={start}>만나기 좋은 동네 찾기</Button>}</> : <section><p className="mb-2 text-[12px] font-bold text-coral">탐색 시작 지점을 찾았어요</p><h1 className="mb-5 text-[23px] font-bold leading-tight">여기부터<br />주변을 둘러볼까요?</h1>{anchors.length ? <div className="space-y-2.5">{anchors.map((anchor, index) => <button key={anchor.id || `${anchor.lat}-${anchor.lon}`} type="button" className="flex w-full items-center gap-3 rounded-[16px] border border-line bg-white p-3.5 text-left" onClick={() => navigate(`/boards/${boardId}/nearby?lat=${encodeURIComponent(anchor.lat)}&lon=${encodeURIComponent(anchor.lon)}`)}><span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral-soft font-bold text-coral">{index + 1}</span><span><b className="block text-[14px]">{anchor.name}</b><span className="block text-[11.5px] text-ink-2">{anchor.category}{anchor.roadAddress ? ` · ${anchor.roadAddress}` : ""}</span></span></button>)}</div> : <div className="rounded-xl bg-white p-4 text-sm text-ink-2">공통으로 추천할 기준점을 찾지 못했어요. 지도를 직접 움직여 주변을 탐색해 보세요.<Button variant="line" className="mt-3 !py-3" onClick={() => navigate(`/boards/${boardId}/nearby`)}>자유 지도 탐색</Button></div>}</section>}
+        {running ? <section className="py-8 text-center"><div className="mx-auto mb-5 h-[66px] w-[66px] animate-spin rounded-full border-[6px] border-coral-soft border-t-coral" /><b className="block">만날 만한 지역을 찾고 있어요</b><p className="mt-1 text-xs text-ink-3">{job.status === "RETRY_WAIT" ? "외부 검색을 다시 시도하고 있어요" : "도달 영역을 계산하고 있어요"}</p><button type="button" className="mt-6 text-sm font-bold text-coral" onClick={() => { stopPolling(); setJob(null); }}>취소</button></section> : <Button onClick={start}>만나기 좋은 동네 찾기</Button>}</> : <section><p className="mb-2 text-[12px] font-bold text-coral">탐색 시작 지점을 찾았어요</p><h1 className="mb-3 text-[23px] font-bold leading-tight">여기부터<br />주변을 둘러볼까요?</h1>{commonArea ? <><p className="mb-4 text-xs text-ink-2">색칠된 영역은 모두의 {job.durationMin}분 도달권이 겹치는 참고 범위예요.</p><KakaoMap className="mb-5 h-64 w-full overflow-hidden rounded-2xl" center={participantCenter ?? undefined} markers={anchors} polygons={[{ id: "common-area", geometry: commonArea }]} /></> : <p className="mb-4 text-xs text-ink-2">이번 시간 범위에서는 공통 도달 영역을 찾지 못했어요.</p>}{anchors.length ? <div className="space-y-2.5">{anchors.map((anchor, index) => <button key={anchor.id || `${anchor.lat}-${anchor.lon}`} type="button" className="flex w-full items-center gap-3 rounded-[16px] border border-line bg-white p-3.5 text-left" onClick={() => navigate(`/boards/${boardId}/nearby?lat=${encodeURIComponent(anchor.lat)}&lon=${encodeURIComponent(anchor.lon)}`)}><span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral-soft font-bold text-coral">{index + 1}</span><span><b className="block text-[14px]">{anchor.name}</b><span className="block text-[11.5px] text-ink-2">{anchor.category}{anchor.roadAddress ? ` · ${anchor.roadAddress}` : ""}</span></span></button>)}</div> : <div className="rounded-xl bg-white p-4 text-sm text-ink-2">공통으로 추천할 기준점을 찾지 못했어요. 지도를 직접 움직여 주변을 탐색해 보세요.<Button variant="line" className="mt-3 !py-3" onClick={() => navigate(`/boards/${boardId}/nearby`)}>자유 지도 탐색</Button></div>}</section>}
     </main>
   </div>;
 }

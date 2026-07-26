@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "./loadKakaoMaps";
 
 const DEFAULT_CENTER = { lat: 37.5665, lon: 126.978 };
+const COMMON_AREA_STYLE = {
+  strokeWeight: 2,
+  strokeColor: "#EE6B5D",
+  strokeOpacity: 0.9,
+  strokeStyle: "solid",
+  fillColor: "#F6A89E",
+  fillOpacity: 0.35,
+  zIndex: 0,
+};
 
 function isCoordinate(point) {
   return Number.isFinite(point?.lat) && Number.isFinite(point?.lon);
@@ -11,9 +20,32 @@ function samePoint(left, right) {
   return left && right && left.lat === right.lat && left.lon === right.lon;
 }
 
+function toPolygonCoordinates(geometry) {
+  if (geometry?.type === "Polygon") return [geometry.coordinates];
+  if (geometry?.type === "MultiPolygon") return geometry.coordinates;
+  return [];
+}
+
+function toKakaoPath(kakao, coordinates) {
+  if (!Array.isArray(coordinates) || coordinates.length === 0) return null;
+  const rings = coordinates.map((ring) => {
+    if (!Array.isArray(ring) || ring.length < 4) return null;
+    const path = ring.map((position) => {
+      const [lon, lat] = position ?? [];
+      return Number.isFinite(lon) && Number.isFinite(lat)
+        ? new kakao.maps.LatLng(lat, lon)
+        : null;
+    });
+    return path.every(Boolean) ? path : null;
+  });
+  if (!rings.every(Boolean)) return null;
+  return rings.length === 1 ? rings[0] : rings;
+}
+
 export function KakaoMap({
   center = DEFAULT_CENTER,
   markers = [],
+  polygons = [],
   selectedMarkerId,
   onMarkerSelect,
   onMapClick,
@@ -24,6 +56,7 @@ export function KakaoMap({
   const mapRef = useRef(null);
   const sdkRef = useRef(null);
   const markerRefs = useRef([]);
+  const polygonRefs = useRef([]);
   const mountedRef = useRef(false);
   const callbacksRef = useRef({ onMarkerSelect, onMapClick, onIdle });
   const lastIdlePointRef = useRef(null);
@@ -75,6 +108,8 @@ export function KakaoMap({
       mountedRef.current = false;
       markerRefs.current.forEach((marker) => marker.setMap(null));
       markerRefs.current = [];
+      polygonRefs.current.forEach((polygon) => polygon.setMap(null));
+      polygonRefs.current = [];
       mapRef.current = null;
       sdkRef.current = null;
     };
@@ -110,7 +145,29 @@ export function KakaoMap({
       markerRefs.current.forEach((marker) => marker.setMap(null));
       markerRefs.current = [];
     };
-  }, [markers, selectedMarkerId]);
+  }, [markers, selectedMarkerId, status]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const kakao = sdkRef.current;
+    if (!map || !kakao) return undefined;
+
+    polygonRefs.current.forEach((polygon) => polygon.setMap(null));
+    polygonRefs.current = polygons.flatMap((item) => toPolygonCoordinates(item?.geometry)
+      .map((coordinates) => toKakaoPath(kakao, coordinates))
+      .filter(Boolean)
+      .map((path) => new kakao.maps.Polygon({
+        map,
+        path,
+        ...COMMON_AREA_STYLE,
+        ...(item?.style ?? {}),
+      })));
+
+    return () => {
+      polygonRefs.current.forEach((polygon) => polygon.setMap(null));
+      polygonRefs.current = [];
+    };
+  }, [polygons, status]);
 
   if (status === "unavailable") {
     return <div className={`${className} flex items-center justify-center bg-[#d7e5df] p-5 text-center text-sm text-ink-2`}>지도 사용 불가</div>;

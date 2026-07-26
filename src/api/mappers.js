@@ -14,6 +14,38 @@ function number(value) {
   return Number.isFinite(value) ? value : null;
 }
 
+function mapPosition(value) {
+  if (!Array.isArray(value) || value.length < 2) return null;
+  const lon = number(value[0]);
+  const lat = number(value[1]);
+  if (lon === null || lat === null || lon < -180 || lon > 180 || lat < -90 || lat > 90) return null;
+  return [lon, lat];
+}
+
+function mapRing(value) {
+  if (!Array.isArray(value) || value.length < 4) return null;
+  const ring = value.map(mapPosition);
+  return ring.every(Boolean) ? ring : null;
+}
+
+function mapPolygonCoordinates(value) {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const polygon = value.map(mapRing);
+  return polygon.every(Boolean) ? polygon : null;
+}
+
+function mapGeoJsonGeometry(value) {
+  if (value?.type === "Polygon") {
+    const coordinates = mapPolygonCoordinates(value.coordinates);
+    return coordinates ? { type: "Polygon", coordinates } : null;
+  }
+  if (value?.type === "MultiPolygon" && Array.isArray(value.coordinates)) {
+    const coordinates = value.coordinates.map(mapPolygonCoordinates);
+    return coordinates.length > 0 && coordinates.every(Boolean) ? { type: "MultiPolygon", coordinates } : null;
+  }
+  return null;
+}
+
 export function mapBoard(value) {
   return {
     id: text(value?.boardId),
@@ -145,6 +177,7 @@ export function mergeOriginCandidates(placeCandidates, addressCandidates) {
 
 export function mapAreaSearchJob(value) {
   const anchors = Array.isArray(value?.result?.anchors) ? value.result.anchors : [];
+  const participantCenter = value?.result?.participantCenter;
   return {
     job: {
       id: text(value?.job?.jobId),
@@ -161,5 +194,10 @@ export function mapAreaSearchJob(value) {
       lon: number(anchor?.location?.lon),
       rank: number(anchor?.rank),
     })).filter((anchor) => anchor.lat !== null && anchor.lon !== null),
+    participantCenter: {
+      lat: number(participantCenter?.lat),
+      lon: number(participantCenter?.lon),
+    },
+    commonArea: mapGeoJsonGeometry(value?.result?.commonArea),
   };
 }
