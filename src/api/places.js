@@ -52,9 +52,9 @@ export async function searchPlaces(boardId, query, options = {}, { signal } = {}
   return (response.data?.items ?? []).map(mapSearchCandidate);
 }
 
-export async function searchNearbyPlaces(boardId, { lat, lon, q, category, radius = 1000 }, { signal } = {}) {
+export async function searchNearbyPlaces(boardId, { lat, lon, q, category, theme, radius = 1000 }, { signal } = {}) {
   const response = await getApiClient().get(pathWithQuery(`/boards/${encodeURIComponent(boardId)}/search/nearby-places`, {
-    lat, lon, q, category, radius,
+    lat, lon, q, category, theme, radius,
   }), boardRequestConfig(boardId, signal));
   return (response.data?.items ?? []).map(mapSearchCandidate);
 }

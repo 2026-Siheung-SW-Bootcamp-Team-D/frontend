@@ -12,7 +12,7 @@ const CATEGORIES = [
   ["CULTURE", "문화시설"],
   ["TOUR", "관광"],
   ["ACCOMMODATION", "숙소"],
-  ["PLAY", "놀이터"],
+  ["ACTIVITY", "놀거리"],
 ];
 
 function validPoint(lat, lon) {
@@ -72,7 +72,7 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
     setError("");
     setStatus("loading");
     try {
-      const found = await searchNearbyPlaces(boardId, { ...searchPoint, q: q || undefined, category: categoryValue || undefined }, { signal: controller.signal });
+      const found = await searchNearbyPlaces(boardId, { ...searchPoint, q: q || undefined, category: categoryValue === "ACTIVITY" ? undefined : categoryValue || undefined, theme: categoryValue === "ACTIVITY" ? "ACTIVITY" : undefined }, { signal: controller.signal });
       if (controller.signal.aborted || generation !== searchGenerationRef.current) return;
       setItems(found);
       setStatus(found.length ? "results" : "empty");
