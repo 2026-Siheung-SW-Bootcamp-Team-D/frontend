@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { moveCoursePlace, orderPlacesByLikes, removeCoursePlace } from "./courseModel.js";
+import { canHighlightTransitRoute, moveCoursePlace, orderPlacesByLikes, removeCoursePlace } from "./courseModel.js";
 
 test("중간 장소를 위로 한 칸 이동한다", () => {
   assert.deepEqual(moveCoursePlace(["a", "b", "c"], "b", -1), ["b", "a", "c"]);
@@ -23,4 +23,10 @@ test("보드 목록은 좋아요가 많은 장소부터 보여 준다", () => {
 test("좋아요 동률은 서버에서 받은 기존 순서를 유지한다", () => {
   const places = [{ id: "first", likeCount: 2 }, { id: "second", likeCount: 2 }, { id: "third", likeCount: 1 }];
   assert.deepEqual(orderPlacesByLikes(places), [places[0], places[1], places[2]]);
+});
+
+test("실제 경로가 있는 참여자만 지도 경로를 강조할 수 있다", () => {
+  assert.equal(canHighlightTransitRoute({ status: "READY", route: { path: [{}, {}] } }), true);
+  assert.equal(canHighlightTransitRoute({ status: "READY", route: { path: [{}] } }), false);
+  assert.equal(canHighlightTransitRoute({ status: "ORIGIN_REQUIRED", route: { path: [{}, {}] } }), false);
 });

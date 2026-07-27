@@ -11,6 +11,10 @@ export function removeCoursePlace(placeIds, placeId) {
   return placeIds.filter((id) => id !== placeId);
 }
 
+export function canHighlightTransitRoute(item) {
+  return item?.status === "READY" && Array.isArray(item?.route?.path) && item.route.path.length > 1;
+}
+
 export function orderPlacesByLikes(places) {
   return places
     .map((place, index) => ({ place, index }))

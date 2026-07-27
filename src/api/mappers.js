@@ -162,8 +162,10 @@ export function mapTransitTimes(value) {
         startName: text(leg?.startName) || null, endName: text(leg?.endName) || null,
         durationMinutes: number(leg?.durationMinutes) ?? 0,
       })),
-      path: (Array.isArray(item.route.path) ? item.route.path : []).map((point) => ({ lon: number(point?.lon), lat: number(point?.lat) }))
-        .filter((point) => point.lon !== null && point.lat !== null),
+      path: (Array.isArray(item.route.path) ? item.route.path : [])
+        .map((point) => mapPosition([point?.lon, point?.lat]))
+        .filter(Boolean)
+        .map(([lon, lat]) => ({ lon, lat })),
     } : null,
   })).filter((item) => item.participantId);
 }

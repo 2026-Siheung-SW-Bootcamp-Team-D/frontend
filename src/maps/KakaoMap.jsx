@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadKakaoMaps } from "./loadKakaoMaps";
+import { collectPolylinePoints } from "./mapGeometry";
 
 const DEFAULT_CENTER = { lat: 37.5665, lon: 126.978 };
 const COMMON_AREA_STYLE = {
@@ -272,6 +273,7 @@ export function KakaoMap({
     const kakao = sdkRef.current;
     if (!fitBounds || !map || !kakao) return;
     const points = markers.filter(isCoordinate).map((marker) => [marker.lon, marker.lat]);
+    points.push(...collectPolylinePoints(polylines));
     polygons.forEach((item) => {
       toPolygonCoordinates(item?.geometry).forEach((polygon) => {
         polygon.forEach((ring) => {
@@ -286,7 +288,7 @@ export function KakaoMap({
     const bounds = new kakao.maps.LatLngBounds();
     points.forEach(([lon, lat]) => bounds.extend(new kakao.maps.LatLng(lat, lon)));
     map.setBounds(bounds, 80, 40, 220, 40);
-  }, [fitBounds, markers, polygons, status]);
+  }, [fitBounds, markers, polygons, polylines, status]);
 
   if (status === "unavailable") {
     return <div className={`${className} flex items-center justify-center bg-[#d7e5df] p-5 text-center text-sm text-ink-2`}>지도 사용 불가</div>;
