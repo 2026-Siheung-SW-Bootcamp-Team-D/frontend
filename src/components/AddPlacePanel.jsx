@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPlace, reverseGeocode, searchNearbyPlaces, searchPlaces } from "../api/places";
+import { bottomSheetMobileHeight } from "../features/bottomSheet/bottomSheetModel";
+import { MobileSheetHandle } from "./MobileSheetHandle";
 import { Button } from "./UI";
 
 const CATEGORIES = [["RESTAURANT", "맛집"], ["CAFE", "카페"], ["CULTURE", "문화"], ["TOUR", "관광"], ["ACCOMMODATION", "숙소"], ["ACTIVITY", "놀거리"]];
@@ -18,6 +20,7 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
   const [manualAddress, setManualAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const controllerRef = useRef(null);
   const resultRefs = useRef(new Map());
   const activeSelection = markerSelection ?? selected;
@@ -81,7 +84,8 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
     if (next) search(null, next);
   };
 
-  return <section className="absolute inset-x-0 bottom-0 z-30 flex max-h-[58%] flex-col rounded-t-3xl bg-white shadow-2xl lg:inset-y-0 lg:left-auto lg:w-[420px] lg:max-h-none lg:rounded-none">
+  return <section className={`absolute inset-x-0 bottom-0 z-30 flex flex-col rounded-t-3xl bg-white shadow-2xl transition-[max-height] duration-200 lg:inset-y-0 lg:left-auto lg:w-[420px] lg:max-h-none lg:rounded-none ${bottomSheetMobileHeight(sheetExpanded, "max-h-[58dvh]")}`}>
+    <MobileSheetHandle expanded={sheetExpanded} onChange={setSheetExpanded} />
     <div className="min-h-0 flex-1 overflow-y-auto p-5">
     <div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-bold tracking-wide text-coral">PLACE LAYER</p><h2 className="text-xl font-bold">장소 추가</h2></div><button type="button" onClick={onClose} className="rounded-full bg-bg px-3 py-2">✕</button></div>
     <div className="mb-4 flex rounded-xl bg-bg p-1"><button type="button" onClick={() => { setMode("search"); onPickMode(false); }} className={`flex-1 rounded-lg py-2 text-sm font-bold ${mode === "search" ? "bg-white shadow" : "text-ink-2"}`}>검색</button><button type="button" onClick={() => { setMode("pin"); onPickMode(true); onLayerChange([]); }} className={`flex-1 rounded-lg py-2 text-sm font-bold ${mode === "pin" ? "bg-white shadow" : "text-ink-2"}`}>직접 핀</button></div>

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPlace, searchNearbyPlaces } from "../api/places";
 import { ApiError } from "../api/errors";
+import { MobileSheetHandle } from "../components/MobileSheetHandle";
+import { bottomSheetMobileHeight } from "../features/bottomSheet/bottomSheetModel";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 import { useServerBoard } from "../store/ServerBoardContext";
@@ -44,6 +46,7 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(initialPoint ? "" : (initialLat != null || initialLon != null ? "잘못된 좌표라 기본 위치에서 탐색해요." : ""));
   const [addingId, setAddingId] = useState("");
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const searchControllerRef = useRef(null);
   const addControllerRef = useRef(null);
   const searchGenerationRef = useRef(0);
@@ -137,9 +140,9 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
     <KakaoMap className="absolute inset-0" center={selectedItem ?? point} markers={mapMarkers} selectedMarkerId={selectedId} onMarkerSelect={setSelectedItem} onMapClick={changePoint} />
     <button type="button" onClick={() => navigate(`/boards/${boardId}`)} className="absolute left-4 top-4 z-20 rounded-xl bg-white p-3 shadow">← 모임</button>
     <p className="absolute right-4 top-4 z-20 rounded-full bg-white/95 px-3 py-2 text-xs font-bold shadow">지도를 눌러 검색 기준 변경</p>
-    <section className="absolute inset-x-0 bottom-0 z-20 flex max-h-[48vh] flex-col rounded-t-3xl bg-white shadow-2xl lg:left-auto lg:right-5 lg:bottom-5 lg:w-[420px] lg:rounded-3xl">
+    <section className={`absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl bg-white shadow-2xl transition-[max-height] duration-200 lg:left-auto lg:right-5 lg:bottom-5 lg:w-[420px] lg:max-h-[calc(100dvh-2.5rem)] lg:rounded-3xl ${bottomSheetMobileHeight(sheetExpanded, "max-h-[48dvh]")}`}>
+      <MobileSheetHandle expanded={sheetExpanded} onChange={setSheetExpanded} />
       <div className="border-b border-line px-4 pb-3 pt-4">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line lg:hidden" />
         <h1 className="font-bold">선택한 위치 주변 탐색</h1>
         <p className="text-xs text-ink-2">{point.lat.toFixed(4)}, {point.lon.toFixed(4)}</p>
         <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); search({ query: keyword, categoryValue: "" }); }}>

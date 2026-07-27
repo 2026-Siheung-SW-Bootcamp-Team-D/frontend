@@ -3,6 +3,8 @@ import { createAreaSearchJob, getAreaSearchJob } from "../api/areaSearch";
 import { createPlace } from "../api/places";
 import { ApiError } from "../api/errors";
 import { Avatar, Button } from "../components/UI";
+import { MobileSheetHandle } from "../components/MobileSheetHandle";
+import { bottomSheetMobileHeight } from "../features/bottomSheet/bottomSheetModel";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 import { useServerBoard } from "../store/ServerBoardContext";
@@ -38,6 +40,7 @@ export function AreaSearchPage({ boardId }) {
   const [selectedAnchor, setSelectedAnchor] = useState(null);
   const [addingAnchorId, setAddingAnchorId] = useState("");
   const [showExclusionConfirm, setShowExclusionConfirm] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const [error, setError] = useState("");
   const controllerRef = useRef(null);
   const timerRef = useRef(null);
@@ -187,9 +190,9 @@ export function AreaSearchPage({ boardId }) {
         <b>{job.durationMin}분 도달권</b>
         <span className="ml-2 text-ink-2">연한 색은 참여자별 · 진한 자주색은 최종 교집합</span>
       </div>
-      <section className="absolute inset-x-0 bottom-0 z-20 flex max-h-[48vh] flex-col rounded-t-3xl bg-white shadow-2xl lg:left-auto lg:right-5 lg:bottom-5 lg:w-[420px] lg:rounded-3xl">
+      <section className={`absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl bg-white shadow-2xl transition-[max-height] duration-200 lg:left-auto lg:right-5 lg:bottom-5 lg:w-[420px] lg:max-h-[calc(100dvh-2.5rem)] lg:rounded-3xl ${bottomSheetMobileHeight(sheetExpanded, "max-h-[48dvh]")}`}>
+        <MobileSheetHandle expanded={sheetExpanded} onChange={setSheetExpanded} />
         <div className="border-b border-line px-5 pb-3 pt-4">
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line lg:hidden" />
           <p className="text-xs font-bold text-coral">공통 영역에서 고르기</p>
           <h1 className="mt-1 text-xl font-bold">핀을 누르면 바로 후보로 추가할 수 있어요</h1>
           <div className="mt-2 flex flex-wrap gap-2">
