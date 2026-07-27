@@ -19,6 +19,8 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const controllerRef = useRef(null);
+  const resultRefs = useRef(new Map());
+  const activeSelection = markerSelection ?? selected;
 
   useEffect(() => () => { controllerRef.current?.abort(); onLayerChange([]); onPickMode(false); }, [onLayerChange, onPickMode]);
   useEffect(() => {
@@ -29,6 +31,13 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
       if (!controller.signal.aborted) setManualAddress(address.roadAddress || address.jibunAddress || address.label);
     }).catch(() => {});
   }, [boardId, pickedPoint]);
+
+  useEffect(() => {
+    if (!activeSelection) return;
+    const key = activeSelection.providerPlaceId;
+    const element = key ? resultRefs.current.get(key) : null;
+    element?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [activeSelection]);
 
   async function search(event, categoryOverride = category) {
     event?.preventDefault();
@@ -66,7 +75,6 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
   }
 
   const pick = (item) => { setSelected(item); onLayerChange([{ ...item, id: "search-selected", kind: "search" }]); };
-  const activeSelection = markerSelection ?? selected;
   const selectCategory = (value) => {
     const next = category === value ? "" : value;
     setCategory(next); setNearbyOnly(Boolean(next));
@@ -83,7 +91,7 @@ export function AddPlacePanel({ boardId, reload, onClose, onLayerChange, pickedP
       <label className="mt-3 flex items-center justify-between rounded-xl bg-bg p-3 text-sm"><span>{pickedPoint ? `선택 위치 주변 ${radius >= 1000 ? `${radius / 1000}km` : `${radius}m`}` : "지도에서 위치를 선택해 주변 검색"}</span><input type="checkbox" disabled={!pickedPoint} checked={nearbyOnly} onChange={(event) => setNearbyOnly(event.target.checked)} /></label>
       {pickedPoint && <><div className="mt-2 flex gap-1">{[300, 500, 1000, 1500, 3000, 5000].map((value) => <button key={value} type="button" onClick={() => onRadiusChange(value)} className={`flex-1 rounded-lg py-2 text-xs font-bold ${radius === value ? "bg-coral text-white" : "bg-bg"}`}>{value >= 1000 ? `${value / 1000}km` : `${value}m`}</button>)}</div><div className="mt-2 flex flex-wrap gap-1">{CATEGORIES.map(([value, label]) => <button key={value} type="button" onClick={() => selectCategory(value)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${category === value ? "bg-violet-700 text-white" : "bg-bg"}`}>{label}</button>)}</div></>}
       <label className="mt-2 flex items-center justify-between rounded-xl bg-bg p-3 text-sm"><span>검색 결과 레이어</span><input type="checkbox" checked={layerVisible} onChange={(event) => { setLayerVisible(event.target.checked); onLayerChange(event.target.checked ? results.map((item, index) => ({ ...item, id: `search-${item.providerPlaceId || index}`, kind: "search" })) : []); }} /></label>
-      <div className="mt-4 space-y-2">{results.map((item, index) => <button key={`${item.providerPlaceId}-${index}`} type="button" onClick={() => pick(item)} className={`w-full rounded-2xl border p-3 text-left ${activeSelection?.providerPlaceId === item.providerPlaceId ? "border-coral bg-coral-soft" : "border-line"}`}><b className="block">{item.name}</b><small className="text-ink-2">{item.address || item.category}</small></button>)}</div>
+      <div className="mt-4 space-y-2">{results.map((item, index) => <button key={`${item.providerPlaceId}-${index}`} ref={(element) => { if (item.providerPlaceId) { if (element) resultRefs.current.set(item.providerPlaceId, element); else resultRefs.current.delete(item.providerPlaceId); } }} type="button" onClick={() => pick(item)} className={`w-full rounded-2xl border p-3 text-left ${activeSelection?.providerPlaceId === item.providerPlaceId ? "border-coral bg-coral-soft" : "border-line"}`}><b className="block">{item.name}</b><small className="text-ink-2">{item.address || item.category}</small></button>)}</div>
     </> : <><p className="rounded-xl bg-bg p-3 text-sm text-ink-2">지도의 원하는 지점을 눌러 주세요. 좌표 입력은 필요 없어요.</p>{pickedPoint && <><input value={manualName} onChange={(event) => setManualName(event.target.value)} className="mt-3 w-full rounded-xl border border-line p-3" placeholder="장소 이름" /><p className="mt-2 text-sm text-ink-2">{manualAddress}</p><Button disabled={busy || !manualName.trim()} className="mt-4" onClick={() => save({ name: manualName.trim(), roadAddress: manualAddress, lat: pickedPoint.lat, lon: pickedPoint.lon, sourceProvider: "MANUAL", inputMethod: "MANUAL_PIN" })}>{busy ? "추가 중…" : "이 위치 추가"}</Button></>}</>}
     </div>
     {mode === "search" && activeSelection && <div className="shrink-0 border-t border-line bg-white p-4"><Button disabled={busy} onClick={() => save(activeSelection)}>{busy ? "추가 중…" : `“${activeSelection.name}” 추가하기`}</Button></div>}
