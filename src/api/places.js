@@ -1,5 +1,5 @@
 import { boardRequestConfig, getApiClient } from "./client";
-import { mapAddressCandidate, mapPlace, mapSearchCandidate, mergeOriginCandidates } from "./mappers";
+import { mapAddressCandidate, mapPlace, mapSearchCandidate, mapTransitTimes, mergeOriginCandidates } from "./mappers";
 
 function pathWithQuery(path, values) {
   const query = new URLSearchParams();
@@ -21,6 +21,15 @@ export async function listPlaces(boardId, { page = 1, size = 20, signal } = {}) 
 export async function getPlace(boardId, placeId, { signal } = {}) {
   const response = await getApiClient().get(`/boards/${encodeURIComponent(boardId)}/places/${encodeURIComponent(placeId)}`, boardRequestConfig(boardId, signal));
   return mapPlace(response.data);
+}
+
+export async function calculateTransitTimes(boardId, placeId, { signal } = {}) {
+  const response = await getApiClient().post(
+    `/boards/${encodeURIComponent(boardId)}/places/${encodeURIComponent(placeId)}/transit-times`,
+    null,
+    boardRequestConfig(boardId, signal),
+  );
+  return mapTransitTimes(response.data);
 }
 
 export async function createPlace(boardId, request, { signal } = {}) {

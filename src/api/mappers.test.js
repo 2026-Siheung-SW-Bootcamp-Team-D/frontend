@@ -74,3 +74,60 @@ test("지역 탐색 응답은 참여자별 도달권과 공통 영역을 함께 
   assert.equal(mapped.commonArea.type, "Polygon");
   assert.equal(mapped.anchors[0].providerPlaceId, "place-1");
 });
+
+test("코스 초안은 장소 순서를 보존하고 중복 장소를 제거한다", () => {
+  const mapped = mappers.mapCourseDraft({
+    version: 3,
+    stops: [
+      { placeId: "plc-b", orderIndex: 2 },
+      { placeId: "plc-a", orderIndex: 1 },
+      { placeId: "plc-a", orderIndex: 3 },
+    ],
+  });
+
+  assert.deepEqual(mapped, {
+    version: 3,
+    etag: "\"draft-3\"",
+    placeIds: ["plc-a", "plc-b"],
+  });
+});
+
+test("참여자별 이동시간은 상태별 안전한 표시 값만 보존한다", () => {
+  const mapped = mappers.mapTransitTimes({
+    items: [
+      {
+        participantId: "ptc-a",
+        nickname: "민지",
+        avatarColor: "#123456",
+        status: "READY",
+        totalMinutes: 38,
+        transferCount: 1,
+        totalWalkMinutes: 7,
+      },
+      {
+        participantId: "ptc-b",
+        nickname: "정우",
+        avatarColor: "#654321",
+        status: "ORIGIN_REQUIRED",
+      },
+    ],
+  });
+
+  assert.deepEqual(mapped, [{
+    participantId: "ptc-a",
+    nickname: "민지",
+    avatarColor: "#123456",
+    status: "READY",
+    totalMinutes: 38,
+    transferCount: 1,
+    totalWalkMinutes: 7,
+  }, {
+    participantId: "ptc-b",
+    nickname: "정우",
+    avatarColor: "#654321",
+    status: "ORIGIN_REQUIRED",
+    totalMinutes: null,
+    transferCount: null,
+    totalWalkMinutes: null,
+  }]);
+});

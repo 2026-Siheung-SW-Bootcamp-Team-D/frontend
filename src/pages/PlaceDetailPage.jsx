@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, Button } from "../components/UI";
 import { createComment, deleteComment, listComments, updateComment } from "../api/comments";
-import { archivePlace, clearSelectedPlace, getPlace, selectPlace, setPlaceLike } from "../api/places";
+import { archivePlace, calculateTransitTimes, clearSelectedPlace, getPlace, selectPlace, setPlaceLike } from "../api/places";
+import { getCourseDraft, putCourseDraft } from "../api/course";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 import { useServerBoard } from "../store/ServerBoardContext";
@@ -27,8 +28,12 @@ export function PlaceDetailPage({ boardId, placeId }) {
   const [editingText, setEditingText] = useState("");
   const [mutating, setMutating] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [courseDraft, setCourseDraft] = useState({ version: 0, etag: "\"draft-0\"", placeIds: [] });
+  const [transitTimes, setTransitTimes] = useState([]);
+  const [transitLoading, setTransitLoading] = useState(false);
   const loadControllerRef = useRef(null);
   const mutationControllerRef = useRef(null);
+  const transitControllerRef = useRef(null);
   const loadGenerationRef = useRef(0);
   const canLoad = boardStatus !== "reentry";
 
@@ -43,14 +48,19 @@ export function PlaceDetailPage({ boardId, placeId }) {
     setStatus("loading");
     setError("");
     try {
-      const [nextPlace, nextComments] = await Promise.all([
+      const [nextPlace, nextComments, nextCourseDraft] = await Promise.all([
         getPlace(boardId, placeId, { signal: controller.signal }),
         listComments(boardId, placeId, { page: 1, size: 20, signal: controller.signal }),
+        getCourseDraft(boardId, { signal: controller.signal }).catch((courseError) => {
+          if (courseError?.isCanceled || courseError?.status === 401) throw courseError;
+          return { version: 0, etag: "\"draft-0\"", placeIds: [] };
+        }),
       ]);
       if (controller.signal.aborted || generation !== loadGenerationRef.current) return;
       setPlace(nextPlace);
       setComments(nextComments.items);
       setCommentsPage(nextComments.page);
+      setCourseDraft(nextCourseDraft);
       setStatus("ready");
     } catch (requestError) {
       if (controller.signal.aborted || requestError?.isCanceled) return;
@@ -99,6 +109,7 @@ export function PlaceDetailPage({ boardId, placeId }) {
 
   useEffect(() => () => {
     mutationControllerRef.current?.abort();
+    transitControllerRef.current?.abort();
   }, [boardId, placeId]);
 
   const mutate = async (operation, { navigateAfter = false } = {}) => {
@@ -137,10 +148,38 @@ export function PlaceDetailPage({ boardId, placeId }) {
     });
   };
 
+  const toggleCourse = () => mutate(async (signal) => {
+    const latest = await getCourseDraft(boardId, { signal });
+    if (signal.aborted) return;
+    const placeIds = latest.placeIds.includes(placeId)
+      ? latest.placeIds.filter((id) => id !== placeId)
+      : [...latest.placeIds, placeId];
+    const saved = await putCourseDraft(boardId, placeIds, latest.etag, { signal });
+    if (!signal.aborted) setCourseDraft(saved);
+  });
+
+  const calculateTransit = async () => {
+    if (transitLoading) return;
+    transitControllerRef.current?.abort();
+    const controller = new AbortController();
+    transitControllerRef.current = controller;
+    setTransitLoading(true);
+    setError("");
+    try {
+      const items = await calculateTransitTimes(boardId, placeId, { signal: controller.signal });
+      if (!controller.signal.aborted) setTransitTimes(items);
+    } catch (requestError) {
+      if (!controller.signal.aborted && !requestError?.isCanceled) setError(errorMessage(requestError));
+    } finally {
+      if (!controller.signal.aborted) setTransitLoading(false);
+    }
+  };
+
   if (boardStatus === "reentry" || status === "reentry") return <Reentry boardId={boardId} />;
   if (status === "loading") return <main className="min-h-screen p-5">장소를 불러오는 중이에요.</main>;
   if (status === "error" || !place) return <main className="flex min-h-screen items-center justify-center bg-bg px-5 text-center"><div><p className="font-bold">장소를 불러오지 못했어요.</p><p className="mt-2 text-sm text-ink-2">{error}</p><Button className="mt-4" onClick={load}>다시 시도</Button><Button variant="line" className="mt-2" onClick={() => navigate(`/boards/${boardId}`)}>모임으로 돌아가기</Button></div></main>;
   const selected = place.selected || board?.selectedPlaceId === place.id;
+  const inCourse = courseDraft.placeIds.includes(place.id);
   return <div className="flex h-screen flex-col bg-bg">
     <button type="button" aria-label="모임으로 돌아가기" className="absolute left-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-[12px] bg-white shadow-md" onClick={() => navigate(`/boards/${boardId}`)}>←</button>
     <div className="flex-1 overflow-y-auto">
@@ -155,6 +194,11 @@ export function PlaceDetailPage({ boardId, placeId }) {
           <button disabled={!place.sourceUrl} type="button" aria-label="원본 지도에서 상세 보기" className="w-[52px] rounded-[14px] border-[1.5px] border-line bg-white text-[18px] disabled:opacity-40" onClick={() => window.open(place.sourceUrl, "_blank", "noopener,noreferrer")}>🔗</button>
         </div>
         {!selected ? <Button disabled={mutating} className="mt-2.5 disabled:opacity-50" onClick={() => mutate((signal) => selectPlace(boardId, placeId, { signal }))}>📍 여기를 '지금 여기'로</Button> : <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => mutate((signal) => clearSelectedPlace(boardId, { signal }))}>현재 선택 해제</Button>}
+        <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={toggleCourse}>{inCourse ? "코스에서 빼기" : "＋ 코스에 담기"}</Button>
+        <section className="mt-5 rounded-2xl bg-white p-4">
+          <div className="flex items-center justify-between gap-3"><div><h3 className="font-bold">참여자별 이동시간</h3><p className="text-xs text-ink-2">출발지는 공개되지 않아요.</p></div><button type="button" disabled={transitLoading} className="rounded-xl bg-coral px-3 py-2 text-sm font-bold text-white disabled:opacity-50" onClick={calculateTransit}>{transitLoading ? "계산 중…" : "계산하기"}</button></div>
+          {transitTimes.length > 0 && <div className="mt-3 space-y-2">{transitTimes.map((item) => <div key={item.participantId} className="flex items-center gap-2 rounded-xl bg-bg p-3"><span className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.avatarColor }}>{item.nickname[0]}</span><b className="min-w-0 flex-1 truncate text-sm">{item.nickname}</b><span className="text-right text-sm">{transitLabel(item)}</span></div>)}</div>}
+        </section>
         <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => { if (window.confirm("이 장소를 보관할까요?")) mutate((signal) => archivePlace(boardId, placeId, { signal }), { navigateAfter: true }); }}>가고 싶은 곳 보관</Button>
         <div className="mb-1.5 mt-5.5 text-[14px] font-bold">의견 <span className="text-ink-3">{commentsPage.totalItems || comments.length}</span> <small>({comments.length}개 표시)</small></div>
         <div className="mb-4 space-y-3">{comments.map((comment) => <div key={comment.id} className="flex gap-2.5"><Avatar label={comment.authorName} /><div className="min-w-0 flex-1"><div className="text-[12.5px] font-bold">{comment.authorName}</div>{editingId === comment.id ? <><input className="mt-1 w-full rounded-lg border border-line p-2 text-[13px]" value={editingText} onChange={(event) => setEditingText(event.target.value)} /><div className="mt-1 flex gap-2"><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => { const content = editingText.trim(); if (content.length >= 1 && content.length <= 500) mutate(async (signal) => { await updateComment(boardId, placeId, comment.id, content, { signal }); if (!signal.aborted) setEditingId(null); }); else setError("댓글은 1~500자로 입력해 주세요."); }}>저장</button><button disabled={mutating} type="button" className="text-xs text-ink-2" onClick={() => setEditingId(null)}>취소</button></div></> : <><div className="mt-0.5 text-[13.5px]">{comment.content}</div><div className="mt-1 text-[10.5px] text-ink-3">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ""}</div>{comment.authorId === currentParticipantId && <div className="mt-1 flex gap-2"><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => { setEditingId(comment.id); setEditingText(comment.content); }}>수정</button><button disabled={mutating} type="button" className="text-xs text-coral" onClick={() => mutate((signal) => deleteComment(boardId, placeId, comment.id, { signal }))}>삭제</button></div>}</>}</div></div>)}</div>
@@ -163,6 +207,13 @@ export function PlaceDetailPage({ boardId, placeId }) {
       </div>
     </div>
   </div>;
+}
+
+function transitLabel(item) {
+  if (item.status === "READY") return `약 ${item.totalMinutes}분 · 환승 ${item.transferCount}회`;
+  if (item.status === "ORIGIN_REQUIRED") return "출발지 미등록";
+  if (item.status === "UNAVAILABLE") return "대중교통 경로 없음";
+  return "계산 실패";
 }
 
 function Reentry({ boardId }) {

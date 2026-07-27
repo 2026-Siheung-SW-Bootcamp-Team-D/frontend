@@ -123,6 +123,33 @@ export function mapComment(value) {
   };
 }
 
+export function mapCourseDraft(value) {
+  const seen = new Set();
+  const rawPlaceIds = Array.isArray(value?.placeIds)
+    ? value.placeIds
+    : (Array.isArray(value?.stops) ? value.stops : [])
+      .slice()
+      .sort((left, right) => (number(left?.orderIndex) ?? 0) - (number(right?.orderIndex) ?? 0))
+      .map((stop) => stop?.placeId);
+  const placeIds = rawPlaceIds
+    .map((placeId) => text(placeId))
+    .filter((placeId) => placeId && !seen.has(placeId) && seen.add(placeId));
+  const version = Number.isInteger(value?.version) && value.version >= 0 ? value.version : 0;
+  return { version, etag: `"draft-${version}"`, placeIds };
+}
+
+export function mapTransitTimes(value) {
+  return (Array.isArray(value?.items) ? value.items : []).map((item) => ({
+    participantId: text(item?.participantId),
+    nickname: text(item?.nickname, "참여자"),
+    avatarColor: text(item?.avatarColor, "#4A90E2"),
+    status: text(item?.status, "FAILED"),
+    totalMinutes: number(item?.totalMinutes),
+    transferCount: number(item?.transferCount),
+    totalWalkMinutes: number(item?.totalWalkMinutes),
+  })).filter((item) => item.participantId);
+}
+
 export function mapSearchCandidate(value) {
   return {
     providerPlaceId: text(value?.providerPlaceId),
