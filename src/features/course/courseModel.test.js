@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { moveCoursePlace, removeCoursePlace } from "./courseModel.js";
+import { moveCoursePlace, orderPlacesForCourse, removeCoursePlace } from "./courseModel.js";
 
 test("중간 장소를 위로 한 칸 이동한다", () => {
   assert.deepEqual(moveCoursePlace(["a", "b", "c"], "b", -1), ["b", "a", "c"]);
@@ -12,4 +12,9 @@ test("범위를 벗어난 이동은 기존 순서를 유지한다", () => {
 
 test("코스에서 지정한 장소만 제거한다", () => {
   assert.deepEqual(removeCoursePlace(["a", "b", "c"], "b"), ["a", "c"]);
+});
+
+test("보드 목록은 코스 순서를 먼저 보여 주고 나머지 후보를 뒤에 둔다", () => {
+  const places = [{ id: "new" }, { id: "second" }, { id: "first" }, { id: "other" }];
+  assert.deepEqual(orderPlacesForCourse(places, ["first", "second"]), [places[2], places[1], places[0], places[3]]);
 });

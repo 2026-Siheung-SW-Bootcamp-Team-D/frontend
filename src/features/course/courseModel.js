@@ -10,3 +10,10 @@ export function moveCoursePlace(placeIds, placeId, direction) {
 export function removeCoursePlace(placeIds, placeId) {
   return placeIds.filter((id) => id !== placeId);
 }
+
+export function orderPlacesForCourse(places, placeIds) {
+  const placeById = new Map(places.map((place) => [place.id, place]));
+  const orderedCoursePlaces = placeIds.map((placeId) => placeById.get(placeId)).filter(Boolean);
+  const coursePlaceIds = new Set(placeIds);
+  return [...orderedCoursePlaces, ...places.filter((place) => !coursePlaceIds.has(place.id))];
+}
