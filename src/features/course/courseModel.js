@@ -11,9 +11,9 @@ export function removeCoursePlace(placeIds, placeId) {
   return placeIds.filter((id) => id !== placeId);
 }
 
-export function orderPlacesForCourse(places, placeIds) {
-  const placeById = new Map(places.map((place) => [place.id, place]));
-  const orderedCoursePlaces = placeIds.map((placeId) => placeById.get(placeId)).filter(Boolean);
-  const coursePlaceIds = new Set(placeIds);
-  return [...orderedCoursePlaces, ...places.filter((place) => !coursePlaceIds.has(place.id))];
+export function orderPlacesByLikes(places) {
+  return places
+    .map((place, index) => ({ place, index }))
+    .sort((left, right) => right.place.likeCount - left.place.likeCount || left.index - right.index)
+    .map(({ place }) => place);
 }

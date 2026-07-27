@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, Button } from "../components/UI";
 import { createComment, deleteComment, listComments, updateComment } from "../api/comments";
-import { archivePlace, calculateTransitTimes, clearSelectedPlace, getPlace, selectPlace, setPlaceLike } from "../api/places";
+import { archivePlace, calculateTransitTimes, getPlace, setPlaceLike } from "../api/places";
 import { getCourseDraft, putCourseDraft } from "../api/course";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
@@ -17,7 +17,7 @@ function errorMessage(error) {
 }
 
 export function PlaceDetailPage({ boardId, placeId }) {
-  const { board, currentParticipantId, status: boardStatus, reload } = useServerBoard();
+  const { currentParticipantId, status: boardStatus, reload } = useServerBoard();
   const [place, setPlace] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentsPage, setCommentsPage] = useState({ number: 1, size: 20, totalItems: 0, totalPages: 0 });
@@ -179,7 +179,6 @@ export function PlaceDetailPage({ boardId, placeId }) {
   if (boardStatus === "reentry" || status === "reentry") return <Reentry boardId={boardId} />;
   if (status === "loading") return <main className="min-h-screen p-5">장소를 불러오는 중이에요.</main>;
   if (status === "error" || !place) return <main className="flex min-h-screen items-center justify-center bg-bg px-5 text-center"><div><p className="font-bold">장소를 불러오지 못했어요.</p><p className="mt-2 text-sm text-ink-2">{error}</p><Button className="mt-4" onClick={load}>다시 시도</Button><Button variant="line" className="mt-2" onClick={() => navigate(`/boards/${boardId}`)}>모임으로 돌아가기</Button></div></main>;
-  const selected = place.selected || board?.selectedPlaceId === place.id;
   const inCourse = courseDraft.placeIds.includes(place.id);
   return <div className="flex h-screen flex-col bg-bg">
     <button type="button" aria-label="모임으로 돌아가기" className="absolute left-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-[12px] bg-white shadow-md" onClick={() => navigate(`/boards/${boardId}`)}>←</button>
@@ -194,8 +193,7 @@ export function PlaceDetailPage({ boardId, placeId }) {
           <button disabled={mutating} type="button" aria-label={`좋아요 ${place.likeCount}`} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] py-3 text-[14px] font-bold disabled:opacity-50 ${place.likedByMe ? "border-coral bg-coral text-white" : "border-line bg-white text-ink"}`} onClick={() => mutate((signal) => setPlaceLike(boardId, placeId, !place.likedByMe, { signal }))}><span>{place.likedByMe ? "🩷" : "🤍"}</span> {place.likeCount}</button>
           <button disabled={!place.sourceUrl} type="button" aria-label="원본 지도에서 상세 보기" className="w-[52px] rounded-[14px] border-[1.5px] border-line bg-white text-[18px] disabled:opacity-40" onClick={() => window.open(place.sourceUrl, "_blank", "noopener,noreferrer")}>🔗</button>
         </div>
-        {!selected ? <Button disabled={mutating} className="mt-2.5 disabled:opacity-50" onClick={() => mutate((signal) => selectPlace(boardId, placeId, { signal }))}>📍 여기를 '지금 여기'로</Button> : <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={() => mutate((signal) => clearSelectedPlace(boardId, { signal }))}>현재 선택 해제</Button>}
-        <Button disabled={mutating} variant="line" className="mt-2 disabled:opacity-50" onClick={toggleCourse}>{inCourse ? "코스에서 빼기" : "＋ 코스에 담기"}</Button>
+        <Button disabled={mutating} variant="line" className="mt-2.5 disabled:opacity-50" onClick={toggleCourse}>{inCourse ? "코스에서 빼기" : "＋ 코스에 담기"}</Button>
         <section className="mt-5 rounded-2xl bg-white p-4">
           <div className="flex items-center justify-between gap-3"><div><h3 className="font-bold">참여자별 이동시간</h3><p className="text-xs text-ink-2">출발지는 공개되지 않아요.</p></div><button type="button" disabled={transitLoading} className="rounded-xl bg-coral px-3 py-2 text-sm font-bold text-white disabled:opacity-50" onClick={calculateTransit}>{transitLoading ? "계산 중…" : "계산하기"}</button></div>
           {transitTimes.length > 0 && <div className="mt-3 space-y-2">{transitTimes.map((item) => <div key={item.participantId} className="flex items-center gap-2 rounded-xl bg-bg p-3"><span className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.avatarColor }}>{item.nickname[0]}</span><b className="min-w-0 flex-1 truncate text-sm">{item.nickname}</b><span className="text-right text-sm">{transitLabel(item)}</span></div>)}</div>}
