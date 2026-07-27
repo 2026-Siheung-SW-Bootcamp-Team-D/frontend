@@ -89,7 +89,30 @@ test("코스 초안은 장소 순서를 보존하고 중복 장소를 제거한�
     version: 3,
     etag: "\"draft-3\"",
     placeIds: ["plc-a", "plc-b"],
+    legs: [],
   });
+});
+
+test("코스 초안은 장소 사이의 예상 이동 정보를 보존한다", () => {
+  const mapped = mappers.mapCourseDraft({
+    version: 2,
+    placeIds: ["plc-a", "plc-b"],
+    legs: [{
+      fromOrder: 1,
+      toOrder: 2,
+      straightDistanceMeters: 830,
+      estimatedWalkMinutes: 12,
+      estimated: true,
+    }],
+  });
+
+  assert.deepEqual(mapped.legs, [{
+    fromOrder: 1,
+    toOrder: 2,
+    straightDistanceMeters: 830,
+    estimatedWalkMinutes: 12,
+    estimated: true,
+  }]);
 });
 
 test("참여자별 이동시간은 상태별 안전한 표시 값만 보존한다", () => {

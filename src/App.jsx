@@ -7,11 +7,12 @@ import { JoinPage } from "./pages/JoinPage";
 import { NearbyPage } from "./pages/NearbyPage";
 import { PlaceDetailPage } from "./pages/PlaceDetailPage";
 import { CreateBoardPage } from "./pages/CreateBoardPage";
+import { CoursePage } from "./pages/CoursePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ServerBoardProvider } from "./store/ServerBoardProvider";
 
 function AppContent({ route }) {
-  const isServerBoardRoute = ["board", "place-detail", "add-place", "area-search", "nearby"].includes(route.route);
+  const isServerBoardRoute = ["board", "place-detail", "add-place", "area-search", "nearby", "course"].includes(route.route);
 
   const routes = {
     home: <HomePage />,
@@ -40,6 +41,7 @@ function AppContent({ route }) {
         initialLon={route.params.lon}
       />
     ),
+    course: <CoursePage key={`course-${route.params.boardId}`} boardId={route.params.boardId} />,
     profile: (
       <ProfilePage
         key={`profile-${route.params.boardId}`}

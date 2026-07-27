@@ -135,7 +135,16 @@ export function mapCourseDraft(value) {
     .map((placeId) => text(placeId))
     .filter((placeId) => placeId && !seen.has(placeId) && seen.add(placeId));
   const version = Number.isInteger(value?.version) && value.version >= 0 ? value.version : 0;
-  return { version, etag: `"draft-${version}"`, placeIds };
+  const legs = (Array.isArray(value?.legs) ? value.legs : [])
+    .map((leg) => ({
+      fromOrder: number(leg?.fromOrder),
+      toOrder: number(leg?.toOrder),
+      straightDistanceMeters: number(leg?.straightDistanceMeters),
+      estimatedWalkMinutes: number(leg?.estimatedWalkMinutes),
+      estimated: leg?.estimated !== false,
+    }))
+    .filter((leg) => leg.fromOrder !== null && leg.toOrder !== null);
+  return { version, etag: `"draft-${version}"`, placeIds, legs };
 }
 
 export function mapTransitTimes(value) {

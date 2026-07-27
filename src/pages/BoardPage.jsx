@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clearSelectedPlace, selectPlace, setPlaceLike } from "../api/places";
 import { patchBoard } from "../api/boards";
 import { getCourseDraft, putCourseDraft } from "../api/course";
@@ -52,6 +52,20 @@ export function BoardPage({ boardId }) {
   const selectionActor = participants.find((participant) => participant.id === board?.selectedByParticipantId);
   const selectionMeta = board?.selectedAt ? `${selectionActor?.nickname ?? "참여자"}님이 ${new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit" }).format(new Date(board.selectedAt))}에 선택` : "";
 
+  const refreshCourseDraft = useCallback(async (signal) => {
+    try {
+      const nextDraft = await getCourseDraft(boardId, { signal });
+      if (!signal?.aborted) setCourseDraft(nextDraft);
+    } catch (requestError) {
+      if (signal?.aborted || requestError?.isCanceled) return;
+      if (requestError?.status === 401) {
+        await reload(signal);
+        return;
+      }
+      setMessage(messageFor(requestError));
+    }
+  }, [boardId, reload]);
+
   useEffect(() => () => {
     mutationControllerRef.current?.abort();
     moreControllerRef.current?.abort();
@@ -59,13 +73,14 @@ export function BoardPage({ boardId }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    getCourseDraft(boardId, { signal: controller.signal })
-      .then((draft) => { if (!controller.signal.aborted) setCourseDraft(draft); })
-      .catch((requestError) => {
-        if (!controller.signal.aborted && !requestError?.isCanceled) setMessage(messageFor(requestError));
-      });
-    return () => controller.abort();
-  }, [boardId]);
+    const timer = window.setTimeout(() => {
+      refreshCourseDraft(controller.signal);
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [refreshCourseDraft]);
 
   async function mutate(id, operation) {
     if (mutationId) return;
@@ -78,10 +93,13 @@ export function BoardPage({ boardId }) {
       await operation(controller.signal);
       if (controller.signal.aborted) return;
       await reload(controller.signal);
+      if (controller.signal.aborted) return;
+      await refreshCourseDraft(controller.signal);
     } catch (requestError) {
       if (controller.signal.aborted || requestError?.isCanceled) return;
       if (requestError?.status === 401) await reload(controller.signal);
       if (requestError?.status === 409) await reload(controller.signal);
+      if (requestError?.status === 412) await refreshCourseDraft(controller.signal);
       if (!controller.signal.aborted) setMessage(messageFor(requestError));
     } finally {
       if (!controller.signal.aborted) setMutationId("");
@@ -163,7 +181,7 @@ export function BoardPage({ boardId }) {
         {addingPlace && <AddPlacePanel boardId={boardId} reload={reload} pickedPoint={pickedPoint} markerSelection={markerSelection} radius={searchRadius} onRadiusChange={setSearchRadius} onLayerChange={setSearchLayer} onPickMode={setPinMode} onClose={() => { setAddingPlace(false); setSearchLayer([]); setMarkerSelection(null); setPinMode(false); setPickedPoint(null); }} />}
       </section>
       <section className={`${addingPlace ? "hidden lg:flex" : "flex"} absolute inset-x-0 bottom-0 z-20 max-h-[36vh] flex-col rounded-t-3xl bg-white shadow-2xl lg:static lg:max-h-[calc(100vh-60px)] lg:rounded-none lg:shadow-none`}>
-        <div className="p-5"><h1 className="text-lg font-bold">가고 싶은 곳 {placesPage.totalItems || board?.counts?.places || 0}곳 <small className="text-ink-3">({places.length}개 표시)</small></h1><p className="mt-1 text-xs font-bold text-coral">코스 초안 {courseDraft.placeIds.length}곳</p>{status === "partial-error" && <p className="mt-2 text-sm text-coral">일부 정보를 불러오지 못했어요. <button type="button" className="underline" onClick={() => reload()}>다시 시도</button></p>}{partialErrors.length > 0 && <p className="sr-only">일부 API 요청이 실패했습니다.</p>}{message && <p className="mt-2 text-sm text-coral">{message}</p>}</div>
+        <div className="p-5"><h1 className="text-lg font-bold">가고 싶은 곳 {placesPage.totalItems || board?.counts?.places || 0}곳 <small className="text-ink-3">({places.length}개 표시)</small></h1><button type="button" className="mt-1 text-xs font-bold text-coral underline" onClick={() => navigate(`/boards/${boardId}/course`)}>코스 보기 · {courseDraft.placeIds.length}곳</button>{status === "partial-error" && <p className="mt-2 text-sm text-coral">일부 정보를 불러오지 못했어요. <button type="button" className="underline" onClick={() => reload()}>다시 시도</button></p>}{partialErrors.length > 0 && <p className="sr-only">일부 API 요청이 실패했습니다.</p>}{message && <p className="mt-2 text-sm text-coral">{message}</p>}</div>
         <div className="flex-1 overflow-auto px-4">{places.length > 0 ? places.map((place) => <article key={place.id} onClick={() => setFocusedId(place.id)} className={`mb-3 cursor-pointer rounded-2xl border p-3 ${(focusedId ?? board?.selectedPlaceId) === place.id ? "border-coral bg-coral-soft" : "border-line"}`}><div className="flex gap-3"><span className="text-2xl">{courseDraft.placeIds.includes(place.id) ? courseDraft.placeIds.indexOf(place.id) + 1 : place.categoryEmoji}</span><span className="flex-1"><b className="block">{place.name}</b><small className="flex items-center gap-1.5 text-ink-2"><span>{place.category} ·</span><span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: place.proposerAvatarColor }}>{place.proposerName[0]}</span><span style={{ color: place.proposerAvatarColor }}>{place.proposerName}</span></small></span></div><div className="mt-2 flex flex-wrap gap-2"><button type="button" disabled={Boolean(mutationId)} onClick={(event) => { event.stopPropagation(); mutate(`like-${place.id}`, (signal) => setPlaceLike(boardId, place.id, !place.likedByMe, { signal })); }} className="rounded-lg bg-white px-2 py-1 text-xs disabled:opacity-50">🩷 {place.likeCount}</button><button type="button" onClick={(event) => { event.stopPropagation(); navigate(`/boards/${boardId}/places/${place.id}`); }} className="rounded-lg bg-white px-2 py-1 text-xs">💬 {place.commentCount}</button><button type="button" disabled={Boolean(mutationId)} onClick={(event) => { event.stopPropagation(); toggleCoursePlace(place.id); }} className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-coral disabled:opacity-50">{courseDraft.placeIds.includes(place.id) ? "코스에서 빼기" : "코스에 담기"}</button>{board?.selectedPlaceId === place.id ? <button type="button" disabled={Boolean(mutationId)} onClick={(event) => { event.stopPropagation(); mutate("clear-selection", (signal) => clearSelectedPlace(boardId, { signal })); }} className="rounded-lg bg-white px-2 py-1 text-xs disabled:opacity-50">현재 선택 해제</button> : <button type="button" disabled={Boolean(mutationId)} onClick={(event) => { event.stopPropagation(); mutate(`select-${place.id}`, (signal) => selectPlace(boardId, place.id, { signal })); }} className="rounded-lg bg-white px-2 py-1 text-xs disabled:opacity-50">현재 선택</button>}</div></article>) : <p className="rounded-2xl bg-bg p-5 text-sm text-ink-2">아직 담긴 장소가 없어요. 검색하거나 직접 핀을 찍어 첫 장소를 추가해 보세요.</p>}{placesPage.number < placesPage.totalPages && <Button variant="line" className="mb-4 !py-3" disabled={loadingMore} onClick={loadMore}>{loadingMore ? "불러오는 중…" : "장소 더 보기"}</Button>}</div>
         <div className="p-4"><Button variant="line" onClick={() => navigate(`/boards/${boardId}/area`)}>🧭 만나기 좋은 동네 찾기</Button></div>
       </section>

@@ -13,6 +13,17 @@ const COMMON_AREA_STYLE = {
 };
 const SELECTED_MARKER_IMAGE = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='44' height='56' viewBox='0 0 44 56'><circle cx='22' cy='22' r='18' fill='white' stroke='#EE6B5D' stroke-width='5'/><circle cx='22' cy='22' r='7' fill='#EE6B5D'/><path d='M22 55 12 33h20z' fill='#EE6B5D'/></svg>");
 
+function courseMarkerImage(kakao, order, selected) {
+  if (!Number.isInteger(order) || order < 1 || order > 10) return undefined;
+  const fill = selected ? "#f0552d" : "#18385f";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 44 56"><path d="M22 54C14 42 4 33 4 20a18 18 0 1 1 36 0c0 13-10 22-18 34Z" fill="${fill}"/><circle cx="22" cy="20" r="13" fill="white"/><text x="22" y="25" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="${fill}">${order}</text></svg>`;
+  return new kakao.maps.MarkerImage(
+    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    new kakao.maps.Size(44, 56),
+    { offset: new kakao.maps.Point(22, 56) },
+  );
+}
+
 function isCoordinate(point) {
   return Number.isFinite(point?.lat) && Number.isFinite(point?.lon);
 }
@@ -148,7 +159,7 @@ export function KakaoMap({
           map,
           position: new kakao.maps.LatLng(item.lat, item.lon),
           title: item.name,
-          image: selected ? new kakao.maps.MarkerImage(SELECTED_MARKER_IMAGE, new kakao.maps.Size(44, 56), { offset: new kakao.maps.Point(22, 56) }) : undefined,
+          image: courseMarkerImage(kakao, item.order, selected) ?? (selected ? new kakao.maps.MarkerImage(SELECTED_MARKER_IMAGE, new kakao.maps.Size(44, 56), { offset: new kakao.maps.Point(22, 56) }) : undefined),
           zIndex: selected ? 2 : 1,
         });
         kakao.maps.event.addListener(marker, "click", () => callbacksRef.current.onMarkerSelect?.(item));

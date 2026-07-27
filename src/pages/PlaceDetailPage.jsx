@@ -164,6 +164,7 @@ export function PlaceDetailPage({ boardId, placeId }) {
     const controller = new AbortController();
     transitControllerRef.current = controller;
     setTransitLoading(true);
+    setTransitTimes([]);
     setError("");
     try {
       const items = await calculateTransitTimes(boardId, placeId, { signal: controller.signal });
