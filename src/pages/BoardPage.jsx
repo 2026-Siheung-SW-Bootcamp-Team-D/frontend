@@ -6,6 +6,7 @@ import { ApiError } from "../api/errors";
 import { Brand, Button } from "../components/UI";
 import { AddPlacePanel } from "../components/AddPlacePanel";
 import { orderPlacesForCourse } from "../features/course/courseModel";
+import { getPlaceDetailTarget } from "../features/place/placeDetailTarget";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 import { useServerBoard } from "../store/ServerBoardContext";
@@ -120,6 +121,19 @@ export function BoardPage({ boardId }) {
     });
   }
 
+  function openPlaceDetail(place) {
+    const target = getPlaceDetailTarget(boardId, place);
+    if (!target) {
+      setMessage("이 장소의 상세 정보 링크가 없어요.");
+      return;
+    }
+    if (target.kind === "external") {
+      window.open(target.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(target.path);
+  }
+
   function openBoardEditor() {
     setBoardForm({ name: board?.name ?? "", purpose: board?.purpose ?? "" });
     setEditingBoard(true);
@@ -176,7 +190,7 @@ export function BoardPage({ boardId }) {
             {selectionMeta && <small className="ml-2 text-ink-2">{selectionMeta} · 확정 전</small>}
           </> : "지도에서 장소를 골라보세요"}
         </p>
-        <KakaoMap className="absolute inset-0" center={focusedPlace ? { lat: focusedPlace.lat, lon: focusedPlace.lon } : undefined} markers={[...places, ...searchLayer, ...(pickedPoint ? [{ id: "picked-point", name: "선택한 위치", ...pickedPoint }] : [])]} polygons={areaVisible && selectedArea ? [{ id: selectedArea.id, geometry: selectedArea.commonArea }] : []} circles={addingPlace && pickedPoint ? [{ ...pickedPoint, radius: searchRadius }] : []} selectedMarkerId={focusedId ?? board?.selectedPlaceId} placeOverlay={overlayPlace} onOverlayClose={() => { setFocusedId(null); setMarkerSelection(null); }} onOverlayDetail={(place) => place.kind === "search" ? setMarkerSelection(place) : navigate(`/boards/${boardId}/places/${place.id}`)} onMarkerSelect={(place) => { if (place.kind === "search") { setMarkerSelection(place); setFocusedId(null); } else { setFocusedId(place.id); setMarkerSelection(null); } }} onMapClick={(point) => { setMarkerSelection(null); if (addingPlace || pinMode) setPickedPoint(point); }} />
+        <KakaoMap className="absolute inset-0" center={focusedPlace ? { lat: focusedPlace.lat, lon: focusedPlace.lon } : undefined} markers={[...places, ...searchLayer, ...(pickedPoint ? [{ id: "picked-point", name: "선택한 위치", ...pickedPoint }] : [])]} polygons={areaVisible && selectedArea ? [{ id: selectedArea.id, geometry: selectedArea.commonArea }] : []} circles={addingPlace && pickedPoint ? [{ ...pickedPoint, radius: searchRadius }] : []} selectedMarkerId={focusedId ?? board?.selectedPlaceId} placeOverlay={overlayPlace} onOverlayClose={() => { setFocusedId(null); setMarkerSelection(null); }} onOverlayDetail={openPlaceDetail} onMarkerSelect={(place) => { if (place.kind === "search") { setMarkerSelection(place); setFocusedId(null); } else { setFocusedId(place.id); setMarkerSelection(null); } }} onMapClick={(point) => { setMarkerSelection(null); if (addingPlace || pinMode) setPickedPoint(point); }} />
         {!addingPlace && !areaPanelOpen && <><button type="button" onClick={() => { setAddingPlace(true); setAreaPanelOpen(false); setPickedPoint(null); setSearchLayer([]); }} className="absolute bottom-[calc(36vh+1rem)] right-4 z-10 grid h-14 w-14 place-items-center rounded-[18px] bg-yellow text-2xl font-black text-navy shadow-[0_6px_0_#d4b837] lg:bottom-5 lg:right-5" aria-label="장소 추가">＋</button>
         <button type="button" onClick={() => { setAreaPanelOpen(true); setAddingPlace(false); }} className="absolute bottom-[calc(36vh+1rem)] left-4 z-10 rounded-xl bg-white px-4 py-3 font-bold shadow lg:bottom-5 lg:left-5">🧭 공통 영역</button></>}
         {areaPanelOpen && <section className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl bg-white p-5 shadow-2xl lg:absolute lg:bottom-5 lg:left-5 lg:right-auto lg:w-80 lg:rounded-2xl"><div className="mb-3 flex items-center justify-between"><b>공통 영역</b><button type="button" onClick={() => setAreaPanelOpen(false)}>✕</button></div>{areaMapResults.length ? <><div className="flex gap-2">{areaMapResults.map((result) => <button key={result.id} type="button" onClick={() => { setAreaDuration(result.durationMin); setAreaVisible(true); }} className={`flex-1 rounded-lg p-2 text-sm font-bold ${(selectedArea?.durationMin === result.durationMin && areaVisible) ? "bg-coral text-white" : "bg-bg"}`}>{result.durationMin}분</button>)}</div><label className="mt-4 flex items-center justify-between text-sm"><span>{selectedArea?.durationMin ?? ""}분 공통 도달 영역 표시</span><input type="checkbox" checked={areaVisible} onChange={(event) => setAreaVisible(event.target.checked)} /></label></> : <><p className="text-sm text-ink-2">아직 지도에 표시할 공통 영역이 없어요.</p><Button className="mt-3 !py-3" onClick={() => navigate(`/boards/${boardId}/area`)}>동네 찾기</Button></>}</section>}

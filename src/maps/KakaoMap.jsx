@@ -233,7 +233,7 @@ export function KakaoMap({
     address.style.cssText = "margin:5px 0 0;color:#64768a;font-size:12px;line-height:1.45;";
     const detail = document.createElement("button");
     detail.type = "button";
-    detail.textContent = "상세 정보 보기";
+    detail.textContent = placeOverlay.kind === "search" ? "카카오맵에서 상세 보기" : "상세 정보 보기";
     detail.style.cssText = "width:100%;margin-top:10px;border:0;border-radius:10px;background:#4777d6;color:white;padding:9px 10px;font-weight:800;font-size:12px;cursor:pointer;";
     detail.addEventListener("click", () => callbacksRef.current.onOverlayDetail?.(placeOverlay));
     content.append(close, category, name, address, detail);
