@@ -6,8 +6,12 @@ function jobPath(boardId, jobId = "") {
   return `/boards/${board}/area-search-jobs${jobId ? `/${encodeURIComponent(jobId)}` : ""}`;
 }
 
-export async function createAreaSearchJob(boardId, durationMin, { signal } = {}) {
-  const response = await getApiClient().post(jobPath(boardId), { durationMin }, boardRequestConfig(boardId, signal));
+export async function createAreaSearchJob(boardId, durationMin, participantIds, { signal } = {}) {
+  const response = await getApiClient().post(
+    jobPath(boardId),
+    { durationMin, participantIds },
+    boardRequestConfig(boardId, signal),
+  );
   return mapAreaSearchJob(response.data);
 }
 

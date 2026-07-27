@@ -89,6 +89,13 @@ export async function patchMyParticipant(boardId, patch, { signal } = {}) {
   return response.data;
 }
 
+export async function removeParticipant(boardId, participantId, { signal } = {}) {
+  await getApiClient().delete(
+    `/boards/${encodeURIComponent(boardId)}/participants/${encodeURIComponent(participantId)}`,
+    boardRequestConfig(boardId, signal),
+  );
+}
+
 export async function getBoardInvitation(boardId, { signal } = {}) {
   const response = await getApiClient().get(
     `/boards/${encodeURIComponent(boardId)}/invitation`,

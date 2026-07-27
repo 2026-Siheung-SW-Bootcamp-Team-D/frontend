@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getBoard, getParticipants, patchMyParticipant } from "../api/boards";
+import { getBoard, getParticipants, patchMyParticipant, removeParticipant } from "../api/boards";
 import { ApiError } from "../api/errors";
 import { reverseGeocode, searchOriginCandidates } from "../api/places";
 import { getBoardSession } from "../api/session";
@@ -39,11 +39,13 @@ export function ProfilePage({ boardId }) {
   const [originChanged, setOriginChanged] = useState(false);
   const [loading, setLoading] = useState(Boolean(session));
   const [saving, setSaving] = useState(false);
+  const [removingParticipantId, setRemovingParticipantId] = useState("");
   const [error, setError] = useState("");
   const [sessionLost, setSessionLost] = useState(false);
   const searchControllerRef = useRef(null);
   const reverseControllerRef = useRef(null);
   const saveControllerRef = useRef(null);
+  const removeControllerRef = useRef(null);
 
   useEffect(() => {
     if (!session) return undefined;
@@ -75,6 +77,7 @@ export function ProfilePage({ boardId }) {
       searchControllerRef.current?.abort();
       reverseControllerRef.current?.abort();
       saveControllerRef.current?.abort();
+      removeControllerRef.current?.abort();
     };
   }, [boardId, session]);
 
@@ -152,7 +155,6 @@ export function ProfilePage({ boardId }) {
     const controller = new AbortController();
     saveControllerRef.current = controller;
     const patch = { nickname: nextNickname };
-    const returnToMapAfterSave = originChanged && Boolean(chosen);
     if (originChanged) {
       patch.origin = chosen
         ? { label: chosen.label, lon: chosen.lon, lat: chosen.lat, source: chosen.source, providerPlaceId: chosen.providerPlaceId || null }
@@ -168,13 +170,34 @@ export function ProfilePage({ boardId }) {
       setChosen(originFromParticipant(response));
       setOriginChanged(false);
       toast("프로필을 저장했어요");
-      if (returnToMapAfterSave) navigate(`/boards/${boardId}`);
+      navigate(`/boards/${boardId}`);
     } catch (requestError) {
       if (controller.signal.aborted || requestError?.isCanceled) return;
       if (requestError?.status === 401) setSessionLost(true);
       setError(messageFor(requestError));
     } finally {
       if (!controller.signal.aborted) setSaving(false);
+    }
+  }
+
+  async function removeMember(participant) {
+    if (removingParticipantId || !window.confirm(`${participant.nickname}님을 모임에서 내보낼까요?`)) return;
+    removeControllerRef.current?.abort();
+    const controller = new AbortController();
+    removeControllerRef.current = controller;
+    setRemovingParticipantId(participant.participantId);
+    setError("");
+    try {
+      await removeParticipant(boardId, participant.participantId, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setParticipants((current) => current.filter((item) => item.participantId !== participant.participantId));
+      toast(`${participant.nickname}님을 내보냈어요`);
+    } catch (requestError) {
+      if (controller.signal.aborted || requestError?.isCanceled) return;
+      if (requestError?.status === 401) setSessionLost(true);
+      setError(messageFor(requestError));
+    } finally {
+      if (!controller.signal.aborted) setRemovingParticipantId("");
     }
   }
 
@@ -200,6 +223,6 @@ export function ProfilePage({ boardId }) {
     {chosen ? <div className="mt-2 flex items-center justify-between gap-3 text-sm"><p className="text-coral">선택됨: {chosen.label}</p><button type="button" className="text-ink-2 underline" onClick={() => { setChosen(null); setOriginChanged(true); }}>출발지 삭제</button></div> : <p className="mt-2 text-sm text-ink-2">출발지를 선택하면 지역 찾기에 사용할 수 있어요.</p>}
     {error && <p className="mt-3 text-sm text-coral">{error}</p>}
     <Button className="mt-4" disabled={saving} onClick={save}>{saving ? "저장하는 중…" : "프로필 저장"}</Button>
-    <div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: participant.avatarColor }}>{participant.nickname?.[0]}</div><b className="flex-1">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small></div>)}</div>
+    <div className="mt-7 space-y-2"><h2 className="font-bold">참여자</h2>{participants.map((participant) => <div key={participant.participantId} className="flex items-center gap-3 rounded-xl bg-white p-3"><div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: participant.avatarColor }}>{participant.nickname?.[0]}</div><b className="min-w-0 flex-1 truncate">{participant.nickname}</b><small className="text-ink-2">{participant.origin?.registered ? "출발지 등록됨" : "미등록"}</small>{participants.find((item) => item.participantId === session.participantId)?.role === "HOST" && participant.role === "MEMBER" && <button type="button" className="rounded-lg border border-coral px-2 py-1 text-xs font-bold text-coral disabled:opacity-50" disabled={Boolean(removingParticipantId)} onClick={() => removeMember(participant)}>{removingParticipantId === participant.participantId ? "처리 중" : "내보내기"}</button>}</div>)}</div>
   </main>;
 }
