@@ -13,7 +13,7 @@ export function Button({ variant = 'coral', children, className = '', ...props }
 }
 
 export function Brand({ className = '', compact = false }) {
-  return <div className={`flex items-center gap-2 font-black tracking-tight ${className}`}><img src={logo} alt="연당 로고" className={compact ? 'h-7 w-7 object-contain' : 'h-10 w-10 object-contain'} /><span>연당</span></div>;
+  return <a href="#/" aria-label="연당 홈으로" className={`flex items-center gap-2 font-black tracking-tight ${className}`}><img src={logo} alt="" className={compact ? 'h-7 w-7 object-contain' : 'h-10 w-10 object-contain'} /><span>연당</span></a>;
 }
 
 export function Mascot({ className = '', alt = '', decorative = true }) {
@@ -36,5 +36,5 @@ export function Toast() {
     });
     return cleanup;
   }, []);
-  return <div className={`fixed left-1/2 -translate-x-1/2 bottom-24 z-50 bg-navy text-white text-[13px] font-bold px-[18px] py-3 rounded-[14px] transition-all ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>{message}</div>;
+  return <div role="status" aria-live="polite" aria-atomic="true" style={{ bottom: "calc(6rem + var(--safe-area-bottom))" }} className={`fixed left-1/2 z-50 -translate-x-1/2 rounded-[14px] bg-navy px-[18px] py-3 text-[13px] font-bold text-white transition-all ${visible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>{message}</div>;
 }

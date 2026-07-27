@@ -25,6 +25,7 @@
 
 :root {
   color-scheme: light;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 body {

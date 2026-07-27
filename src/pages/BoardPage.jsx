@@ -72,6 +72,15 @@ export function BoardPage({ boardId }) {
   }, []);
 
   useEffect(() => {
+    if (!share) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setShare(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [share]);
+
+  useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       refreshCourseDraft(controller.signal);
@@ -178,7 +187,7 @@ export function BoardPage({ boardId }) {
       </span>
     </header>
     {editingBoard && <div className="border-b border-line bg-white p-4"><label className="text-sm font-bold">모임 이름</label><input value={boardForm.name} maxLength="40" onChange={(event) => setBoardForm((current) => ({ ...current, name: event.target.value }))} className="mt-1 w-full rounded-xl border border-line p-3" /><label className="mt-3 block text-sm font-bold">목적</label><input value={boardForm.purpose} maxLength="100" onChange={(event) => setBoardForm((current) => ({ ...current, purpose: event.target.value }))} className="mt-1 w-full rounded-xl border border-line p-3" /><div className="mt-3 flex gap-2"><Button disabled={Boolean(mutationId)} className="!py-3" onClick={saveBoard}>저장</Button><Button disabled={Boolean(mutationId)} variant="line" className="!py-3" onClick={() => setEditingBoard(false)}>취소</Button></div></div>}
-    {share && <div className="fixed inset-0 z-50 grid place-items-end bg-black/30 sm:place-items-center"><section className="w-full max-w-md rounded-t-3xl bg-white p-5 sm:rounded-3xl"><button type="button" className="float-right" onClick={() => setShare(false)}>✕</button><h2 className="text-xl font-bold">친구 초대하기</h2><p className="mt-3 rounded-xl bg-bg p-3 font-bold">참여 코드 {invitation?.inviteCode ?? "불러오는 중"}</p>{inviteUrl && <p className="mt-2 break-all text-sm text-ink-2">{inviteUrl}</p>}<Button className="mt-4" disabled={!inviteUrl} onClick={() => navigator.clipboard?.writeText(inviteUrl).then(() => toast("초대 링크를 복사했어요"), () => toast("링크를 복사하지 못했어요"))}>초대 링크 복사</Button></section></div>}
+    {share && <div className="fixed inset-0 z-50 grid place-items-end bg-black/30 sm:place-items-center"><section role="dialog" aria-modal="true" aria-labelledby="share-dialog-title" className="w-full max-w-md rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+var(--safe-area-bottom))] sm:rounded-3xl sm:pb-5"><button type="button" aria-label="초대 창 닫기" className="float-right" onClick={() => setShare(false)}>✕</button><h2 id="share-dialog-title" className="text-xl font-bold">친구 초대하기</h2><p className="mt-3 rounded-xl bg-bg p-3 font-bold">참여 코드 {invitation?.inviteCode ?? "불러오는 중"}</p>{inviteUrl && <p className="mt-2 break-all text-sm text-ink-2">{inviteUrl}</p>}<Button className="mt-4" disabled={!inviteUrl} onClick={() => navigator.clipboard?.writeText(inviteUrl).then(() => toast("초대 링크를 복사했어요"), () => toast("링크를 복사하지 못했어요"))}>초대 링크 복사</Button></section></div>}
     <div className="relative flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_420px]">
       <section className="relative h-full min-h-[calc(100dvh-61px)] overflow-hidden bg-sky-soft p-5">
         <p className="relative z-10 inline-block rounded-full bg-white/90 px-3 py-2 text-sm font-bold shadow">지도에서 장소를 골라보세요</p>
