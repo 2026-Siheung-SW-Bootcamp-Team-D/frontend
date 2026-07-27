@@ -11,6 +11,9 @@ import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
 import { useServerBoard } from "../store/ServerBoardContext";
 import { useToast } from "../hooks/useToast";
+import { useLiveLocation } from "../hooks/useLiveLocation";
+import { getBoardSession } from "../api/session";
+import { formatLastSeen } from "../features/liveLocation/liveLocationModel";
 
 function messageFor(error) {
   if (error instanceof ApiError) {
@@ -45,12 +48,24 @@ export function BoardPage({ boardId }) {
   const mutationControllerRef = useRef(null);
   const moreControllerRef = useRef(null);
   const toast = useToast();
+  const { sharing, locations: liveLocations, error: liveLocationError, startSharing, stopSharing } = useLiveLocation(boardId);
+  const currentParticipantId = getBoardSession(boardId)?.participantId;
   const placesForList = orderPlacesByLikes(places);
   const focusedPlace = places.find((place) => place.id === focusedId)
     ?? places[0];
   const openedPlace = focusedId ? places.find((place) => place.id === focusedId) : null;
   const overlayPlace = markerSelection ?? openedPlace;
   const selectedArea = areaMapResults.find((result) => result.durationMin === areaDuration) ?? areaMapResults[0] ?? null;
+  const liveMarkers = liveLocations.map((location) => ({
+    ...location,
+    id: `live-${location.participantId}`,
+    kind: "live-location",
+    isMe: location.participantId === currentParticipantId,
+    lastSeen: formatLastSeen(location.updatedAt),
+  }));
+  const liveCircles = liveLocations
+    .filter((location) => Number.isFinite(location.accuracyMeters) && location.accuracyMeters > 0)
+    .map((location) => ({ ...location, radius: Math.min(location.accuracyMeters, 5000), color: location.avatarColor, fillOpacity: 0.08 }));
 
   const refreshCourseDraft = useCallback(async (signal) => {
     try {
@@ -191,14 +206,15 @@ export function BoardPage({ boardId }) {
     <div className="relative flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_420px]">
       <section className="relative h-full min-h-[calc(100dvh-61px)] overflow-hidden bg-sky-soft p-5">
         <p className="relative z-10 inline-block rounded-full bg-white/90 px-3 py-2 text-sm font-bold shadow">지도에서 장소를 골라보세요</p>
-        <KakaoMap className="absolute inset-0" center={focusedPlace ? { lat: focusedPlace.lat, lon: focusedPlace.lon } : undefined} markers={[...places, ...searchLayer, ...(pickedPoint ? [{ id: "picked-point", name: "선택한 위치", ...pickedPoint }] : [])]} polygons={areaVisible && selectedArea ? [{ id: selectedArea.id, geometry: selectedArea.commonArea }] : []} circles={addingPlace && pickedPoint ? [{ ...pickedPoint, radius: searchRadius }] : []} selectedMarkerId={focusedId} placeOverlay={overlayPlace} onOverlayClose={() => { setFocusedId(null); setMarkerSelection(null); }} onOverlayDetail={openPlaceDetail} onMarkerSelect={(place) => { if (place.kind === "search") { setMarkerSelection(place); setFocusedId(null); } else { setFocusedId(place.id); setMarkerSelection(null); } }} onMapClick={(point) => { setMarkerSelection(null); if (addingPlace || pinMode) setPickedPoint(point); }} />
+        <KakaoMap className="absolute inset-0" center={focusedPlace ? { lat: focusedPlace.lat, lon: focusedPlace.lon } : undefined} markers={[...places, ...searchLayer, ...liveMarkers, ...(pickedPoint ? [{ id: "picked-point", name: "선택한 위치", ...pickedPoint }] : [])]} polygons={areaVisible && selectedArea ? [{ id: selectedArea.id, geometry: selectedArea.commonArea }] : []} circles={[...(addingPlace && pickedPoint ? [{ ...pickedPoint, radius: searchRadius }] : []), ...liveCircles]} selectedMarkerId={focusedId} placeOverlay={overlayPlace} onOverlayClose={() => { setFocusedId(null); setMarkerSelection(null); }} onOverlayDetail={openPlaceDetail} onMarkerSelect={(place) => { if (place.kind === "live-location") return; if (place.kind === "search") { setMarkerSelection(place); setFocusedId(null); } else { setFocusedId(place.id); setMarkerSelection(null); } }} onMapClick={(point) => { setMarkerSelection(null); if (addingPlace || pinMode) setPickedPoint(point); }} />
         {!addingPlace && !areaPanelOpen && <><button type="button" onClick={() => { setAddingPlace(true); setAreaPanelOpen(false); setPickedPoint(null); setSearchLayer([]); }} className="absolute bottom-[calc(36vh+1rem)] right-4 z-10 grid h-14 w-14 place-items-center rounded-[18px] bg-yellow text-2xl font-black text-navy shadow-[0_6px_0_#d4b837] lg:bottom-5 lg:right-5" aria-label="장소 추가">＋</button>
+        <button type="button" onClick={() => { if (sharing) stopSharing(); else startSharing(); }} className={`absolute bottom-[calc(36vh+1rem)] right-20 z-10 rounded-xl px-3 py-3 text-xs font-black shadow lg:bottom-5 lg:right-24 ${sharing ? "bg-navy text-white" : "bg-white text-ink"}`} aria-pressed={sharing}>{sharing ? "위치 공유 중지" : "내 위치 공유"}</button>
         <button type="button" onClick={() => { setAreaPanelOpen(true); setAddingPlace(false); }} className="absolute bottom-[calc(36vh+1rem)] left-4 z-10 rounded-xl bg-white px-4 py-3 font-bold shadow lg:bottom-5 lg:left-5">🧭 공통 영역</button></>}
         {areaPanelOpen && <section className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl bg-white p-5 shadow-2xl lg:absolute lg:bottom-5 lg:left-5 lg:right-auto lg:w-80 lg:rounded-2xl"><div className="mb-3 flex items-center justify-between"><b>공통 영역</b><button type="button" onClick={() => setAreaPanelOpen(false)}>✕</button></div>{areaMapResults.length ? <><div className="flex gap-2">{areaMapResults.map((result) => <button key={result.id} type="button" onClick={() => { setAreaDuration(result.durationMin); setAreaVisible(true); }} className={`flex-1 rounded-lg p-2 text-sm font-bold ${(selectedArea?.durationMin === result.durationMin && areaVisible) ? "bg-coral text-white" : "bg-bg"}`}>{result.durationMin}분</button>)}</div><label className="mt-4 flex items-center justify-between text-sm"><span>{selectedArea?.durationMin ?? ""}분 공통 도달 영역 표시</span><input type="checkbox" checked={areaVisible} onChange={(event) => setAreaVisible(event.target.checked)} /></label></> : <><p className="text-sm text-ink-2">아직 지도에 표시할 공통 영역이 없어요.</p><Button className="mt-3 !py-3" onClick={() => navigate(`/boards/${boardId}/area`)}>동네 찾기</Button></>}</section>}
         {addingPlace && <AddPlacePanel boardId={boardId} reload={reload} pickedPoint={pickedPoint} markerSelection={markerSelection} radius={searchRadius} onRadiusChange={setSearchRadius} onLayerChange={setSearchLayer} onPickMode={setPinMode} onClose={() => { setAddingPlace(false); setSearchLayer([]); setMarkerSelection(null); setPinMode(false); setPickedPoint(null); }} />}
       </section>
       <section className={`${addingPlace ? "hidden lg:flex" : "flex"} absolute inset-x-0 bottom-0 z-20 max-h-[36vh] flex-col rounded-t-3xl bg-white shadow-2xl lg:static lg:max-h-[calc(100vh-60px)] lg:rounded-none lg:shadow-none`}>
-        <div className="p-5"><h1 className="text-lg font-bold">가고 싶은 곳 {placesPage.totalItems || board?.counts?.places || 0}곳 <small className="text-ink-3">({places.length}개 표시)</small></h1><button type="button" className="mt-1 text-xs font-bold text-coral underline" onClick={() => navigate(`/boards/${boardId}/course`)}>코스 보기 · {courseDraft.placeIds.length}곳</button>{status === "partial-error" && <p className="mt-2 text-sm text-coral">일부 정보를 불러오지 못했어요. <button type="button" className="underline" onClick={() => reload()}>다시 시도</button></p>}{partialErrors.length > 0 && <p className="sr-only">일부 API 요청이 실패했습니다.</p>}{message && <p className="mt-2 text-sm text-coral">{message}</p>}</div>
+        <div className="p-5"><h1 className="text-lg font-bold">가고 싶은 곳 {placesPage.totalItems || board?.counts?.places || 0}곳 <small className="text-ink-3">({places.length}개 표시)</small></h1><button type="button" className="mt-1 text-xs font-bold text-coral underline" onClick={() => navigate(`/boards/${boardId}/course`)}>코스 보기 · {courseDraft.placeIds.length}곳</button>{status === "partial-error" && <p className="mt-2 text-sm text-coral">일부 정보를 불러오지 못했어요. <button type="button" className="underline" onClick={() => reload()}>다시 시도</button></p>}{partialErrors.length > 0 && <p className="sr-only">일부 API 요청이 실패했습니다.</p>}{(message || liveLocationError) && <p className="mt-2 text-sm text-coral">{message || liveLocationError}</p>}</div>
         <div className="flex-1 overflow-auto px-4">{placesForList.length > 0 ? placesForList.map((place) => <article key={place.id} onClick={() => setFocusedId(place.id)} className={`mb-3 cursor-pointer rounded-2xl border p-3 ${focusedId === place.id ? "border-coral bg-coral-soft" : "border-line"}`}><div className="flex gap-3"><span className="text-2xl">{courseDraft.placeIds.includes(place.id) ? courseDraft.placeIds.indexOf(place.id) + 1 : place.categoryEmoji}</span><span className="flex-1"><b className="block">{place.name}</b><small className="flex items-center gap-1.5 text-ink-2"><span>{place.category} ·</span><span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: place.proposerAvatarColor }}>{place.proposerName[0]}</span><span style={{ color: place.proposerAvatarColor }}>{place.proposerName}</span></small></span></div><div className="mt-2 flex flex-wrap gap-2"><button type="button" disabled={Boolean(mutationId)} onClick={(event) => { event.stopPropagation(); mutate(`like-${place.id}`, (signal) => setPlaceLike(boardId, place.id, !place.likedByMe, { signal })); }} className="rounded-lg bg-white px-2 py-1 text-xs disabled:opacity-50">🩷 {place.likeCount}</button><button type="button" onClick={(event) => { event.stopPropagation(); navigate(`/boards/${boardId}/places/${place.id}`); }} className="rounded-lg bg-white px-2 py-1 text-xs">💬 {place.commentCount}</button><button type="button" disabled={Boolean(mutationId)} onClick={(event) => { event.stopPropagation(); toggleCoursePlace(place.id); }} className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-coral disabled:opacity-50">{courseDraft.placeIds.includes(place.id) ? "코스에서 빼기" : "코스에 담기"}</button></div></article>) : <p className="rounded-2xl bg-bg p-5 text-sm text-ink-2">아직 담긴 장소가 없어요. 검색하거나 직접 핀을 찍어 첫 장소를 추가해 보세요.</p>}{placesPage.number < placesPage.totalPages && <Button variant="line" className="mb-4 !py-3" disabled={loadingMore} onClick={loadMore}>{loadingMore ? "불러오는 중…" : "장소 더 보기"}</Button>}</div>
         <div className="p-4"><Button variant="line" onClick={() => navigate(`/boards/${boardId}/area`)}>🧭 만나기 좋은 동네 찾기</Button></div>
       </section>

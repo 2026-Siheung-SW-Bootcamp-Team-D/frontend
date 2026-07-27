@@ -157,3 +157,14 @@ test("참여자별 이동시간은 상태별 안전한 표시 값만 보존한�
     route: null,
   }]);
 });
+
+test("실시간 위치는 유효한 좌표와 안전한 정확도만 보존한다", () => {
+  assert.deepEqual(mappers.mapLiveLocations({ items: [
+    { participantId: "ptc-a", nickname: "민지", avatarColor: "#4777D6", lat: 37.5, lon: 127, accuracyMeters: 18, updatedAt: "2026-07-27T10:00:00Z" },
+    { participantId: "ptc-b", nickname: "범위밖", lat: 99, lon: 127 },
+    { participantId: "ptc-c", nickname: "정확도", lat: 37.4, lon: 126.8, accuracyMeters: 6000, updatedAt: "bad" },
+  ] }), [
+    { participantId: "ptc-a", nickname: "민지", avatarColor: "#4777D6", lat: 37.5, lon: 127, accuracyMeters: 18, updatedAt: "2026-07-27T10:00:00Z" },
+    { participantId: "ptc-c", nickname: "정확도", avatarColor: "#4A90E2", lat: 37.4, lon: 126.8, accuracyMeters: null, updatedAt: null },
+  ]);
+});

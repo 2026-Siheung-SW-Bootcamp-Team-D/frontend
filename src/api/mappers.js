@@ -170,6 +170,23 @@ export function mapTransitTimes(value) {
   })).filter((item) => item.participantId);
 }
 
+export function mapLiveLocations(value) {
+  return (Array.isArray(value?.items) ? value.items : []).map((item) => {
+    const lat = number(item?.lat);
+    const lon = number(item?.lon);
+    const accuracyMeters = number(item?.accuracyMeters);
+    return {
+      participantId: text(item?.participantId),
+      nickname: text(item?.nickname, "참여자"),
+      avatarColor: text(item?.avatarColor, "#4A90E2"),
+      lat,
+      lon,
+      accuracyMeters: accuracyMeters !== null && accuracyMeters >= 0 && accuracyMeters <= 5000 ? accuracyMeters : null,
+      updatedAt: typeof item?.updatedAt === "string" && Number.isFinite(Date.parse(item.updatedAt)) ? item.updatedAt : null,
+    };
+  }).filter((item) => item.participantId && item.lat !== null && item.lon !== null && item.lat >= -90 && item.lat <= 90 && item.lon >= -180 && item.lon <= 180);
+}
+
 export function mapSearchCandidate(value) {
   return {
     providerPlaceId: text(value?.providerPlaceId),

@@ -25,6 +25,17 @@ function courseMarkerImage(kakao, order, selected) {
   );
 }
 
+function liveMarkerImage(kakao, color, initial) {
+  const fill = /^#[0-9a-f]{6}$/i.test(color) ? color : "#4A90E2";
+  const letter = String(initial || "나").slice(0, 1).replace(/[<>&"']/g, "");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52"><path d="M22 51C14 40 5 32 5 20a17 17 0 1 1 34 0c0 12-9 20-17 31Z" fill="${fill}"/><circle cx="22" cy="20" r="12" fill="white"/><text x="22" y="25" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="${fill}">${letter}</text></svg>`;
+  return new kakao.maps.MarkerImage(
+    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    new kakao.maps.Size(44, 52),
+    { offset: new kakao.maps.Point(22, 52) },
+  );
+}
+
 function isCoordinate(point) {
   return Number.isFinite(point?.lat) && Number.isFinite(point?.lon);
 }
@@ -75,6 +86,7 @@ export function KakaoMap({
   const mapRef = useRef(null);
   const sdkRef = useRef(null);
   const markerRefs = useRef([]);
+  const markerLabelRefs = useRef([]);
   const polygonRefs = useRef([]);
   const circleRefs = useRef([]);
   const polylineRefs = useRef([]);
@@ -130,6 +142,8 @@ export function KakaoMap({
       mountedRef.current = false;
       markerRefs.current.forEach((marker) => marker.setMap(null));
       markerRefs.current = [];
+      markerLabelRefs.current.forEach((label) => label.setMap(null));
+      markerLabelRefs.current = [];
       polygonRefs.current.forEach((polygon) => polygon.setMap(null));
       polygonRefs.current = [];
       circleRefs.current.forEach((circle) => circle.setMap(null));
@@ -156,17 +170,27 @@ export function KakaoMap({
     if (!map || !kakao) return undefined;
 
     markerRefs.current.forEach((marker) => marker.setMap(null));
+    markerLabelRefs.current.forEach((label) => label.setMap(null));
+    markerLabelRefs.current = [];
     markerRefs.current = markers
       .filter((marker) => isCoordinate(marker))
       .map((item) => {
         const selected = item.id === selectedMarkerId;
+        const isLiveLocation = item.kind === "live-location";
         const marker = new kakao.maps.Marker({
           map,
           position: new kakao.maps.LatLng(item.lat, item.lon),
-          title: item.name,
-          image: courseMarkerImage(kakao, item.order, selected) ?? (selected ? new kakao.maps.MarkerImage(SELECTED_MARKER_IMAGE, new kakao.maps.Size(44, 56), { offset: new kakao.maps.Point(22, 56) }) : undefined),
-          zIndex: selected ? 2 : 1,
+          title: isLiveLocation ? item.nickname : item.name,
+          image: isLiveLocation ? liveMarkerImage(kakao, item.avatarColor, item.nickname) : courseMarkerImage(kakao, item.order, selected) ?? (selected ? new kakao.maps.MarkerImage(SELECTED_MARKER_IMAGE, new kakao.maps.Size(44, 56), { offset: new kakao.maps.Point(22, 56) }) : undefined),
+          zIndex: isLiveLocation ? 4 : selected ? 2 : 1,
         });
+        if (isLiveLocation) {
+          const label = document.createElement("span");
+          const name = item.isMe ? `나 · ${item.nickname}` : item.nickname;
+          label.textContent = item.lastSeen ? `${name} · ${item.lastSeen}` : name;
+          label.style.cssText = `display:block;white-space:nowrap;border:1px solid #dce8ed;border-radius:999px;background:rgba(255,255,255,.96);padding:3px 7px;font:700 11px Pretendard,-apple-system,sans-serif;color:${/^#[0-9a-f]{6}$/i.test(item.avatarColor) ? item.avatarColor : "#18385f"};box-shadow:0 2px 8px rgba(24,56,95,.15);`;
+          markerLabelRefs.current.push(new kakao.maps.CustomOverlay({ map, position: new kakao.maps.LatLng(item.lat, item.lon), content: label, yAnchor: 2.7, zIndex: 4 }));
+        }
         kakao.maps.event.addListener(marker, "click", () => callbacksRef.current.onMarkerSelect?.(item));
         return marker;
       });
@@ -174,6 +198,8 @@ export function KakaoMap({
     return () => {
       markerRefs.current.forEach((marker) => marker.setMap(null));
       markerRefs.current = [];
+      markerLabelRefs.current.forEach((label) => label.setMap(null));
+      markerLabelRefs.current = [];
     };
   }, [markers, selectedMarkerId, status]);
 
@@ -184,7 +210,7 @@ export function KakaoMap({
     circleRefs.current.forEach((circle) => circle.setMap(null));
     circleRefs.current = circles.filter((circle) => isCoordinate(circle) && Number.isFinite(circle.radius)).map((circle) => new kakao.maps.Circle({
       map, center: new kakao.maps.LatLng(circle.lat, circle.lon), radius: circle.radius,
-      strokeWeight: 2, strokeStyle: "dashed", strokeColor: "#6D28D9", strokeOpacity: 0.8, fillColor: "#6D28D9", fillOpacity: 0.1,
+      strokeWeight: 2, strokeStyle: "dashed", strokeColor: circle.color ?? "#6D28D9", strokeOpacity: 0.8, fillColor: circle.color ?? "#6D28D9", fillOpacity: circle.fillOpacity ?? 0.1,
     }));
     return () => { circleRefs.current.forEach((circle) => circle.setMap(null)); circleRefs.current = []; };
   }, [circles, status]);
