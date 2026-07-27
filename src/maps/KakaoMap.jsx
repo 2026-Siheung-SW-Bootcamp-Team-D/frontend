@@ -50,6 +50,9 @@ export function KakaoMap({
   circles = [],
   fitBounds = false,
   selectedMarkerId,
+  placeOverlay,
+  onOverlayClose,
+  onOverlayDetail,
   onMarkerSelect,
   onMapClick,
   onIdle,
@@ -61,8 +64,9 @@ export function KakaoMap({
   const markerRefs = useRef([]);
   const polygonRefs = useRef([]);
   const circleRefs = useRef([]);
+  const overlayRef = useRef(null);
   const mountedRef = useRef(false);
-  const callbacksRef = useRef({ onMarkerSelect, onMapClick, onIdle });
+  const callbacksRef = useRef({ onMarkerSelect, onMapClick, onIdle, onOverlayClose, onOverlayDetail });
   const lastIdlePointRef = useRef(null);
   const initialCenterRef = useRef(isCoordinate(center) ? center : DEFAULT_CENTER);
   const [status, setStatus] = useState("loading");
@@ -70,8 +74,8 @@ export function KakaoMap({
   const centerLon = center?.lon;
 
   useEffect(() => {
-    callbacksRef.current = { onMarkerSelect, onMapClick, onIdle };
-  }, [onMarkerSelect, onMapClick, onIdle]);
+    callbacksRef.current = { onMarkerSelect, onMapClick, onIdle, onOverlayClose, onOverlayDetail };
+  }, [onMarkerSelect, onMapClick, onIdle, onOverlayClose, onOverlayDetail]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -116,6 +120,8 @@ export function KakaoMap({
       polygonRefs.current = [];
       circleRefs.current.forEach((circle) => circle.setMap(null));
       circleRefs.current = [];
+      overlayRef.current?.setMap(null);
+      overlayRef.current = null;
       mapRef.current = null;
       sdkRef.current = null;
     };
@@ -188,6 +194,53 @@ export function KakaoMap({
       polygonRefs.current = [];
     };
   }, [polygons, status]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const kakao = sdkRef.current;
+    overlayRef.current?.setMap(null);
+    overlayRef.current = null;
+    if (!map || !kakao || !isCoordinate(placeOverlay)) return undefined;
+
+    const content = document.createElement("section");
+    content.setAttribute("aria-label", `${placeOverlay.name} 장소 미리보기`);
+    content.style.cssText = "width:236px;border:1px solid #dce8ed;border-radius:16px;background:rgba(255,255,255,.97);padding:12px;box-shadow:0 12px 30px rgba(24,56,95,.22);font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;color:#172b49;";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("aria-label", "장소 미리보기 닫기");
+    close.textContent = "×";
+    close.style.cssText = "float:right;border:0;border-radius:8px;background:#eaf1ff;color:#315fae;font-size:18px;line-height:22px;width:24px;height:24px;cursor:pointer;";
+    close.addEventListener("click", () => callbacksRef.current.onOverlayClose?.());
+    const category = document.createElement("p");
+    category.textContent = placeOverlay.category || "장소";
+    category.style.cssText = "margin:0;color:#4777d6;font-size:11px;font-weight:800;";
+    const name = document.createElement("strong");
+    name.textContent = placeOverlay.name || "선택한 장소";
+    name.style.cssText = "display:block;margin-top:3px;padding-right:28px;font-size:15px;line-height:1.3;";
+    const address = document.createElement("p");
+    address.textContent = placeOverlay.address || "주소 정보가 없어요.";
+    address.style.cssText = "margin:5px 0 0;color:#64768a;font-size:12px;line-height:1.45;";
+    const detail = document.createElement("button");
+    detail.type = "button";
+    detail.textContent = "상세 정보 보기";
+    detail.style.cssText = "width:100%;margin-top:10px;border:0;border-radius:10px;background:#4777d6;color:white;padding:9px 10px;font-weight:800;font-size:12px;cursor:pointer;";
+    detail.addEventListener("click", () => callbacksRef.current.onOverlayDetail?.(placeOverlay));
+    content.append(close, category, name, address, detail);
+
+    const overlay = new kakao.maps.CustomOverlay({
+      map,
+      position: new kakao.maps.LatLng(placeOverlay.lat, placeOverlay.lon),
+      content,
+      yAnchor: 1.24,
+      zIndex: 5,
+      clickable: true,
+    });
+    overlayRef.current = overlay;
+    return () => {
+      overlay.setMap(null);
+      if (overlayRef.current === overlay) overlayRef.current = null;
+    };
+  }, [placeOverlay, status]);
 
   useEffect(() => {
     const map = mapRef.current;
