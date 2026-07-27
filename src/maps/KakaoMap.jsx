@@ -59,6 +59,7 @@ export function KakaoMap({
   markers = [],
   polygons = [],
   circles = [],
+  polylines = [],
   fitBounds = false,
   selectedMarkerId,
   placeOverlay,
@@ -75,6 +76,7 @@ export function KakaoMap({
   const markerRefs = useRef([]);
   const polygonRefs = useRef([]);
   const circleRefs = useRef([]);
+  const polylineRefs = useRef([]);
   const overlayRef = useRef(null);
   const mountedRef = useRef(false);
   const callbacksRef = useRef({ onMarkerSelect, onMapClick, onIdle, onOverlayClose, onOverlayDetail });
@@ -131,6 +133,8 @@ export function KakaoMap({
       polygonRefs.current = [];
       circleRefs.current.forEach((circle) => circle.setMap(null));
       circleRefs.current = [];
+      polylineRefs.current.forEach((polyline) => polyline.setMap(null));
+      polylineRefs.current = [];
       overlayRef.current?.setMap(null);
       overlayRef.current = null;
       mapRef.current = null;
@@ -183,6 +187,16 @@ export function KakaoMap({
     }));
     return () => { circleRefs.current.forEach((circle) => circle.setMap(null)); circleRefs.current = []; };
   }, [circles, status]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const kakao = sdkRef.current;
+    if (!map || !kakao) return undefined;
+    polylineRefs.current.forEach((polyline) => polyline.setMap(null));
+    polylineRefs.current = polylines.filter((item) => Array.isArray(item.path) && item.path.length > 1)
+      .map((item) => new kakao.maps.Polyline({ map, path: item.path.map(({ lat, lon }) => new kakao.maps.LatLng(lat, lon)), strokeWeight: item.weight ?? 5, strokeColor: item.color, strokeOpacity: item.opacity ?? 0.78, strokeStyle: "solid", zIndex: item.zIndex ?? 2 }));
+    return () => { polylineRefs.current.forEach((polyline) => polyline.setMap(null)); polylineRefs.current = []; };
+  }, [polylines, status]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -156,6 +156,15 @@ export function mapTransitTimes(value) {
     totalMinutes: number(item?.totalMinutes),
     transferCount: number(item?.transferCount),
     totalWalkMinutes: number(item?.totalWalkMinutes),
+    route: item?.route ? {
+      legs: (Array.isArray(item.route.legs) ? item.route.legs : []).map((leg) => ({
+        mode: text(leg?.mode, "UNKNOWN"), routeName: text(leg?.routeName) || null,
+        startName: text(leg?.startName) || null, endName: text(leg?.endName) || null,
+        durationMinutes: number(leg?.durationMinutes) ?? 0,
+      })),
+      path: (Array.isArray(item.route.path) ? item.route.path : []).map((point) => ({ lon: number(point?.lon), lat: number(point?.lat) }))
+        .filter((point) => point.lon !== null && point.lat !== null),
+    } : null,
   })).filter((item) => item.participantId);
 }
 

@@ -126,6 +126,7 @@ test("참여자별 이동시간은 상태별 안전한 표시 값만 보존한�
         totalMinutes: 38,
         transferCount: 1,
         totalWalkMinutes: 7,
+        route: { legs: [{ mode: "SUBWAY", routeName: "수도권2호선", startName: "강남", endName: "신도림", durationMinutes: 28 }], path: [{ lon: 127.0276, lat: 37.4979 }, { lon: "bad", lat: 37.5 }, { lon: 126.8912, lat: 37.509 }] },
       },
       {
         participantId: "ptc-b",
@@ -144,6 +145,7 @@ test("참여자별 이동시간은 상태별 안전한 표시 값만 보존한�
     totalMinutes: 38,
     transferCount: 1,
     totalWalkMinutes: 7,
+    route: { legs: [{ mode: "SUBWAY", routeName: "수도권2호선", startName: "강남", endName: "신도림", durationMinutes: 28 }], path: [{ lon: 127.0276, lat: 37.4979 }, { lon: 126.8912, lat: 37.509 }] },
   }, {
     participantId: "ptc-b",
     nickname: "정우",
@@ -152,5 +154,6 @@ test("참여자별 이동시간은 상태별 안전한 표시 값만 보존한�
     totalMinutes: null,
     transferCount: null,
     totalWalkMinutes: null,
+    route: null,
   }]);
 });
