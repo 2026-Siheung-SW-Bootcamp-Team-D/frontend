@@ -180,7 +180,7 @@ export function AreaSearchPage({ boardId }) {
   const nextDuration = [30, 45, 60].find((minutes) => minutes > (job?.durationMin ?? duration));
 
   if (finished) {
-    return <main className="relative h-screen overflow-hidden bg-[#d7e5df]">
+    return <main className="relative h-[100dvh] overflow-hidden bg-sky-soft">
       <KakaoMap className="absolute inset-0" center={selectedAnchor ?? participantCenter ?? undefined} markers={anchors} polygons={areaPolygons} fitBounds={!selectedAnchor} selectedMarkerId={selectedAnchor?.id} onMarkerSelect={setSelectedAnchor} />
       <button type="button" className="absolute left-4 top-4 z-20 rounded-xl bg-white p-3 shadow" onClick={() => navigate(`/boards/${boardId}`)}>← 모임</button>
       <div className="absolute right-4 top-4 z-20 max-w-[calc(100%-5.5rem)] rounded-xl bg-white/95 px-3 py-2 text-xs shadow backdrop-blur">

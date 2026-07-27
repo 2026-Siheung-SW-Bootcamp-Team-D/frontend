@@ -133,7 +133,7 @@ export function NearbyPage({ boardId, initialLat, initialLon }) {
 
   const mapMarkers = items.map((item, index) => ({ ...item, id: item.providerPlaceId || `nearby-${index}` }));
   const selectedId = selectedItem?.providerPlaceId || (selectedItem ? `nearby-${items.indexOf(selectedItem)}` : null);
-  return <main className="relative h-screen overflow-hidden bg-[#d7e5df]">
+  return <main className="relative h-[100dvh] overflow-hidden bg-sky-soft">
     <KakaoMap className="absolute inset-0" center={selectedItem ?? point} markers={mapMarkers} selectedMarkerId={selectedId} onMarkerSelect={setSelectedItem} onMapClick={changePoint} />
     <button type="button" onClick={() => navigate(`/boards/${boardId}`)} className="absolute left-4 top-4 z-20 rounded-xl bg-white p-3 shadow">← 모임</button>
     <p className="absolute right-4 top-4 z-20 rounded-full bg-white/95 px-3 py-2 text-xs font-bold shadow">지도를 눌러 검색 기준 변경</p>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getInvitationPreview, joinBoard } from "../api/boards";
 import { ApiError } from "../api/errors";
-import { Button } from "../components/UI";
+import { Brand, Button, Mascot } from "../components/UI";
 import { navigate } from "../router/router";
 
 function previewMessage(error) {
@@ -67,5 +67,5 @@ export function JoinPage({ code }) {
   if (status === "loading") return <main className="flex min-h-screen items-center justify-center p-5 text-ink-2">초대를 확인하는 중이에요…</main>;
   if (status === "closed") return <main className="flex min-h-screen items-center justify-center p-5 text-center"><div><h1 className="text-2xl font-bold">닫힌 모임이에요</h1><p className="mt-2 text-ink-2">새 초대 링크를 받아 다시 시도해 주세요.</p><Button className="mt-5" onClick={() => navigate("/")}>홈으로</Button></div></main>;
   if (status === "error") return <main className="flex min-h-screen items-center justify-center p-5 text-center"><div><h1 className="text-2xl font-bold">열 수 없는 초대예요</h1><p className="mt-2 text-ink-2">{error}</p><Button className="mt-5" onClick={() => navigate("/")}>홈으로</Button></div></main>;
-  return <main className="flex min-h-screen items-center justify-center p-5"><form className="w-full max-w-md" onSubmit={(event) => { event.preventDefault(); submit(); }}><p className="text-sm font-bold text-coral">{preview?.boardName}에 초대받았어요</p><h1 className="mt-2 text-2xl font-bold">모임에서 쓸<br />이름을 알려주세요</h1><p className="mt-2 text-sm text-ink-2">다음 단계에서 출발지를 선택할 수 있어요.</p><input value={nickname} onChange={(event) => { setNickname(event.target.value); setError(""); }} maxLength="20" className="mt-7 w-full rounded-2xl border border-line bg-white p-4 font-bold" placeholder="닉네임" />{error && <p className="mt-2 text-sm text-coral">{error}</p>}<Button type="submit" className="mt-5" disabled={joining}>{joining ? "입장하는 중…" : "입장하고 출발지 설정"}</Button></form></main>;
+  return <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(150deg,#eaf8ff,#fffdf3)] p-5"><form className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white bg-white/85 p-6 shadow-[0_18px_45px_rgba(40,90,130,.12)]" onSubmit={(event) => { event.preventDefault(); submit(); }}><Brand compact /><p className="mt-8 inline-flex rounded-lg bg-grass-soft px-2.5 py-1 text-sm font-black text-[#55762c]">{preview?.boardName}에 초대받았어요</p><h1 className="mt-3 text-[27px] font-black leading-tight tracking-tight">모임에서 쓸<br />이름을 알려주세요</h1><p className="mt-2 max-w-[16rem] text-sm leading-6 text-ink-2">다음 단계에서 출발지를 선택할 수 있어요. 정확한 출발지는 다른 참여자에게 보이지 않아요.</p><Mascot className="absolute right-1 top-16 h-28 w-32" /><input value={nickname} onChange={(event) => { setNickname(event.target.value); setError(""); }} maxLength="20" className="mt-7 w-full rounded-[16px] border border-line bg-white p-4 font-bold" placeholder="닉네임" />{error && <p className="mt-2 text-sm text-coral">{error}</p>}<Button type="submit" className="mt-5" disabled={joining}>{joining ? "입장하는 중…" : "입장하고 출발지 설정"}</Button></form></main>;
 }

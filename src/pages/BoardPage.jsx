@@ -3,7 +3,7 @@ import { clearSelectedPlace, selectPlace, setPlaceLike } from "../api/places";
 import { patchBoard } from "../api/boards";
 import { getCourseDraft, putCourseDraft } from "../api/course";
 import { ApiError } from "../api/errors";
-import { Button } from "../components/UI";
+import { Brand, Button } from "../components/UI";
 import { AddPlacePanel } from "../components/AddPlacePanel";
 import { KakaoMap } from "../maps/KakaoMap";
 import { navigate } from "../router/router";
@@ -136,8 +136,8 @@ export function BoardPage({ boardId }) {
 
   const inviteUrl = invitation?.inviteUrl;
   return <main className="flex min-h-screen flex-col bg-bg">
-    <header className="flex items-center justify-between border-b border-line bg-white p-3">
-      <span><b>{board?.name}</b><button type="button" className="ml-2 text-xs text-ink-2 underline" onClick={openBoardEditor}>수정</button></span>
+    <header className="flex items-center justify-between border-b border-line bg-white/95 p-3 backdrop-blur">
+      <span className="flex items-center gap-2"><Brand compact /><span><b className="block text-sm">{board?.name}</b><button type="button" className="text-xs text-ink-2 underline" onClick={openBoardEditor}>모임 설정</button></span></span>
       <span className="flex gap-2">
         <button type="button" onClick={() => setShare(true)} className="rounded-lg border border-line px-3 py-2">초대</button>
         <button type="button" onClick={() => navigate(`/boards/${boardId}/profile`)} className="flex -space-x-3">
@@ -148,7 +148,7 @@ export function BoardPage({ boardId }) {
     {editingBoard && <div className="border-b border-line bg-white p-4"><label className="text-sm font-bold">모임 이름</label><input value={boardForm.name} maxLength="40" onChange={(event) => setBoardForm((current) => ({ ...current, name: event.target.value }))} className="mt-1 w-full rounded-xl border border-line p-3" /><label className="mt-3 block text-sm font-bold">목적</label><input value={boardForm.purpose} maxLength="100" onChange={(event) => setBoardForm((current) => ({ ...current, purpose: event.target.value }))} className="mt-1 w-full rounded-xl border border-line p-3" /><div className="mt-3 flex gap-2"><Button disabled={Boolean(mutationId)} className="!py-3" onClick={saveBoard}>저장</Button><Button disabled={Boolean(mutationId)} variant="line" className="!py-3" onClick={() => setEditingBoard(false)}>취소</Button></div></div>}
     {share && <div className="fixed inset-0 z-50 grid place-items-end bg-black/30 sm:place-items-center"><section className="w-full max-w-md rounded-t-3xl bg-white p-5 sm:rounded-3xl"><button type="button" className="float-right" onClick={() => setShare(false)}>✕</button><h2 className="text-xl font-bold">친구 초대하기</h2><p className="mt-3 rounded-xl bg-bg p-3 font-bold">참여 코드 {invitation?.inviteCode ?? "불러오는 중"}</p>{inviteUrl && <p className="mt-2 break-all text-sm text-ink-2">{inviteUrl}</p>}<Button className="mt-4" disabled={!inviteUrl} onClick={() => navigator.clipboard?.writeText(inviteUrl).then(() => toast("초대 링크를 복사했어요"), () => toast("링크를 복사하지 못했어요"))}>초대 링크 복사</Button></section></div>}
     <div className="relative flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_420px]">
-      <section className="relative h-full min-h-[calc(100vh-61px)] overflow-hidden bg-[#d7e5df] p-5">
+      <section className="relative h-full min-h-[calc(100dvh-61px)] overflow-hidden bg-sky-soft p-5">
         <p className="relative z-10 inline-block rounded-full bg-white/90 px-3 py-2 text-sm font-bold shadow">
           {board?.selectedPlaceId ? <>
             <span>지금 함께 보는 곳 · {places.find((place) => place.id === board.selectedPlaceId)?.name ?? "장소"}</span>
@@ -167,7 +167,7 @@ export function BoardPage({ boardId }) {
           </div>
           <Button className="mt-3 !py-2.5" onClick={() => navigate(`/boards/${boardId}/places/${openedPlace.id}`)}>상세 정보 보기</Button>
         </section>}
-        {!addingPlace && !areaPanelOpen && <><button type="button" onClick={() => { setAddingPlace(true); setAreaPanelOpen(false); setPickedPoint(null); setSearchLayer([]); }} className="absolute bottom-[calc(36vh+1rem)] right-4 z-10 rounded-xl bg-coral px-4 py-3 font-bold text-white shadow lg:bottom-5 lg:right-5">＋ 장소 추가</button>
+        {!addingPlace && !areaPanelOpen && <><button type="button" onClick={() => { setAddingPlace(true); setAreaPanelOpen(false); setPickedPoint(null); setSearchLayer([]); }} className="absolute bottom-[calc(36vh+1rem)] right-4 z-10 grid h-14 w-14 place-items-center rounded-[18px] bg-yellow text-2xl font-black text-navy shadow-[0_6px_0_#d4b837] lg:bottom-5 lg:right-5" aria-label="장소 추가">＋</button>
         <button type="button" onClick={() => { setAreaPanelOpen(true); setAddingPlace(false); }} className="absolute bottom-[calc(36vh+1rem)] left-4 z-10 rounded-xl bg-white px-4 py-3 font-bold shadow lg:bottom-5 lg:left-5">🧭 공통 영역</button></>}
         {areaPanelOpen && <section className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl bg-white p-5 shadow-2xl lg:absolute lg:bottom-5 lg:left-5 lg:right-auto lg:w-80 lg:rounded-2xl"><div className="mb-3 flex items-center justify-between"><b>공통 영역</b><button type="button" onClick={() => setAreaPanelOpen(false)}>✕</button></div>{areaMapResults.length ? <><div className="flex gap-2">{areaMapResults.map((result) => <button key={result.id} type="button" onClick={() => { setAreaDuration(result.durationMin); setAreaVisible(true); }} className={`flex-1 rounded-lg p-2 text-sm font-bold ${(selectedArea?.durationMin === result.durationMin && areaVisible) ? "bg-coral text-white" : "bg-bg"}`}>{result.durationMin}분</button>)}</div><label className="mt-4 flex items-center justify-between text-sm"><span>{selectedArea?.durationMin ?? ""}분 공통 도달 영역 표시</span><input type="checkbox" checked={areaVisible} onChange={(event) => setAreaVisible(event.target.checked)} /></label></> : <><p className="text-sm text-ink-2">아직 지도에 표시할 공통 영역이 없어요.</p><Button className="mt-3 !py-3" onClick={() => navigate(`/boards/${boardId}/area`)}>동네 찾기</Button></>}</section>}
         {addingPlace && <AddPlacePanel boardId={boardId} reload={reload} pickedPoint={pickedPoint} markerSelection={markerSelection} radius={searchRadius} onRadiusChange={setSearchRadius} onLayerChange={setSearchLayer} onPickMode={setPinMode} onClose={() => { setAddingPlace(false); setSearchLayer([]); setMarkerSelection(null); setPinMode(false); setPickedPoint(null); }} />}

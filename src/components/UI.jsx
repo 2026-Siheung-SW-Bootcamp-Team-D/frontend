@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addToastListener } from '../hooks/useToast';
+import logo from '../assets/yeondang-logo.png';
+import mascot from '../assets/yeondang-mascot.png';
 
 export function Button({ variant = 'coral', children, className = '', ...props }) {
   const variants = {
@@ -7,12 +9,20 @@ export function Button({ variant = 'coral', children, className = '', ...props }
     navy: 'bg-navy text-white font-bold',
     line: 'bg-white text-ink border border-line font-bold',
   };
-  return <button className={`w-full px-4 py-4 rounded-[16px] text-[15.5px] flex items-center justify-center gap-2 cursor-pointer ${variants[variant]} ${className}`} {...props}>{children}</button>;
+  return <button className={`w-full min-h-11 px-4 py-3.5 rounded-[16px] text-[15.5px] flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:cursor-not-allowed disabled:shadow-none ${variants[variant]} ${className}`} {...props}>{children}</button>;
+}
+
+export function Brand({ className = '', compact = false }) {
+  return <div className={`flex items-center gap-2 font-black tracking-tight ${className}`}><img src={logo} alt="연당 로고" className={compact ? 'h-7 w-7 object-contain' : 'h-10 w-10 object-contain'} /><span>연당</span></div>;
+}
+
+export function Mascot({ className = '', alt = '', decorative = true }) {
+  return <img src={mascot} alt={decorative ? '' : alt} aria-hidden={decorative || undefined} className={`object-contain ${className}`} />;
 }
 
 export function Avatar({ emoji, label, color = 'p1' }) {
-  const colors = { p1: 'bg-coral', p2: 'bg-teal', p3: 'bg-yellow', p4: 'bg-[#5b6b8c]' };
-  return <div className={`w-10 h-10 ${colors[color]} rounded-full flex items-center justify-center text-white font-bold text-[12px]`}>{emoji || label?.[0]}</div>;
+  const colors = { p1: 'bg-coral', p2: 'bg-[#6d9b3e]', p3: 'bg-[#d5ad2e]', p4: 'bg-[#5b6b8c]' };
+  return <div className={`w-10 h-10 ${colors[color]} rounded-[12px] flex items-center justify-center text-white font-bold text-[12px]`}>{emoji || label?.[0]}</div>;
 }
 
 export function Toast() {

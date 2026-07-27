@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createBoard } from "../api/boards";
 import { ApiError } from "../api/errors";
-import { Button } from "../components/UI";
+import { Brand, Button, Mascot } from "../components/UI";
 import { navigate } from "../router/router";
 import { useToast } from "../hooks/useToast";
 
@@ -44,20 +44,21 @@ export function CreateBoardPage() {
   const inviteUrl = created?.invitation?.inviteUrl;
   const boardId = created?.board?.boardId;
   return (
-    <div className="min-h-screen bg-bg px-5 py-10">
+    <div className="min-h-screen bg-[linear-gradient(150deg,#eaf8ff,#fffdf3)] px-5 py-6">
       <div className="mx-auto w-full max-w-md">
-        <button type="button" onClick={() => navigate("/")} className="text-ink-2">← 홈</button>
+        <div className="flex items-center justify-between"><button type="button" onClick={() => navigate("/")} className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-ink-2 shadow-sm">← 홈</button><Brand compact /></div>
         {created ? (
-          <div className="mt-8 rounded-[20px] border border-line bg-white p-5">
-            <h1 className="text-2xl font-bold">모임을 만들었어요</h1>
+          <div className="relative mt-8 overflow-hidden rounded-[28px] border border-white bg-white p-6 shadow-[0_18px_45px_rgba(40,90,130,.12)]">
+            <Mascot className="absolute -right-6 -top-6 h-36 w-40" />
+            <h1 className="text-2xl font-black">모임을 만들었어요</h1>
             <p className="mt-2 text-ink-2">참여 코드 <b>{created.invitation.inviteCode}</b></p>
             <p className="mt-3 break-all rounded-lg bg-bg p-3 text-sm">{inviteUrl}</p>
             <Button className="mt-4" onClick={() => navigator.clipboard?.writeText(inviteUrl).then(() => toast("초대 링크를 복사했어요"), () => toast("복사하지 못했어요. 링크를 길게 눌러 복사해 주세요."))}>초대 링크 복사</Button>
             <Button variant="navy" className="mt-2" onClick={() => navigate(`/boards/${boardId}/profile`)}>출발지 설정하기</Button>
           </div>
         ) : (
-          <form onSubmit={(event) => { event.preventDefault(); submit(); }}>
-            <h1 className="mt-8 text-2xl font-bold">새 모임 만들기</h1>
+          <form className="mt-8 rounded-[28px] border border-white bg-white/85 p-6 shadow-[0_18px_45px_rgba(40,90,130,.12)]" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+            <p className="text-xs font-black tracking-[.14em] text-coral">새로운 약속</p><h1 className="mt-2 text-2xl font-black">새 모임 만들기</h1>
             <p className="mt-2 text-ink-2">친구들과 가고 싶은 곳을 모아보세요.</p>
             <label className="mt-6 block font-bold">모임 이름</label>
             <input value={name} onChange={(event) => setName(event.target.value)} maxLength="40" className="mt-2 w-full rounded-xl border border-line bg-white p-4" placeholder="예: 금요일 저녁 모임" />
