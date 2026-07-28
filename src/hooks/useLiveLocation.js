@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteMyLiveLocation, getLiveLocations, putMyLiveLocation } from "../api/liveLocations";
 import { isLiveCoordinate, shouldSendLocation } from "../features/liveLocation/liveLocationModel";
 
-const POLL_INTERVAL_MS = 10_000;
+const POLL_INTERVAL_MS = 30_000;
 
 function currentPosition(position) {
   const point = {

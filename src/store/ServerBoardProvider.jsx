@@ -5,7 +5,10 @@ import { ApiError } from "../api/errors";
 import { mapBoard, mapParticipant } from "../api/mappers";
 import { listPlaces } from "../api/places";
 import { getBoardSession, touchBoardSession } from "../api/session";
+import { useBoardEvents } from "../hooks/useBoardEvents";
 import { ServerBoardContext } from "./ServerBoardContext";
+
+const RELOAD_DEBOUNCE_MS = 300;
 
 const EMPTY_PAGE = { number: 1, size: 20, totalItems: 0, totalPages: 0 };
 const EMPTY_DATA = { board: null, participants: [], places: [], placesPage: EMPTY_PAGE, invitation: null, areaMapResults: [] };
@@ -29,6 +32,7 @@ export function ServerBoardProvider({ boardId, children }) {
   const reloadControllerRef = useRef(null);
   const moreControllerRef = useRef(null);
   const requestGenerationRef = useRef(0);
+  const sseReloadTimerRef = useRef(null);
 
   useEffect(() => {
     activeBoardIdRef.current = boardId;
@@ -165,6 +169,19 @@ export function ServerBoardProvider({ boardId, children }) {
       moreControllerRef.current?.abort();
     };
   }, [boardId, reload]);
+
+  // 서버가 SSE로 "무언가 바뀌었다"는 신호만 보내므로, 실제 데이터는 기존 reload()로 다시 받는다.
+  // 연속으로 이벤트가 오면 reload 요청이 몰리지 않도록 300ms 디바운스한다.
+  const handleServerEvent = useCallback(() => {
+    window.clearTimeout(sseReloadTimerRef.current);
+    sseReloadTimerRef.current = window.setTimeout(() => {
+      reload();
+    }, RELOAD_DEBOUNCE_MS);
+  }, [reload]);
+
+  useBoardEvents(boardId, handleServerEvent);
+
+  useEffect(() => () => window.clearTimeout(sseReloadTimerRef.current), [boardId]);
 
   const value = useMemo(() => ({
     boardId,
