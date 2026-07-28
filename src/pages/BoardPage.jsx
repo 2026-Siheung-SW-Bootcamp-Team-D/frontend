@@ -107,7 +107,7 @@ export function BoardPage({ boardId }) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [refreshCourseDraft]);
+  }, [refreshCourseDraft, status, board?.updatedAt]);
 
   async function mutate(id, operation) {
     if (mutationId) return;

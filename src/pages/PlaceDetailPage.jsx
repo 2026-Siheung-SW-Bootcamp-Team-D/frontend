@@ -17,7 +17,7 @@ function errorMessage(error) {
 }
 
 export function PlaceDetailPage({ boardId, placeId }) {
-  const { currentParticipantId, status: boardStatus, reload } = useServerBoard();
+  const { board, currentParticipantId, status: boardStatus, reload } = useServerBoard();
   const [place, setPlace] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentsPage, setCommentsPage] = useState({ number: 1, size: 20, totalItems: 0, totalPages: 0 });
@@ -105,7 +105,7 @@ export function PlaceDetailPage({ boardId, placeId }) {
       window.clearTimeout(timer);
       loadControllerRef.current?.abort();
     };
-  }, [canLoad, load]);
+  }, [canLoad, load, boardStatus, board?.updatedAt]);
 
   useEffect(() => () => {
     mutationControllerRef.current?.abort();
